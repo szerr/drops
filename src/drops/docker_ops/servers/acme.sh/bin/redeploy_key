@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# 部署 acme.sh key
+
+# 使用方式参考 https://github.com/acmesh-official/acme.sh/wiki/%E8%AF%B4%E6%98%8E
+# 用 阿里云api 的话用下边两行代码，内网应用的话会用到。
+# 然后 --webroot /var/www/html 改成 --dns dns_ali。
+export Ali_Key=""
+export Ali_Secret=""
+
+
+# 建议 acme.sh 的目录映射路径和 nginx 的路径相同，key 按站点名分开放好。
+~/.acme.sh/acme.sh $*  --issue --webroot /var/www/html \
+-d api.example.com \
+-d www.example.com && \
+mkdir -p /etc/ssl/example.com && \
+~/.acme.sh/acme.sh  --install-cert -d example.com \
+--key-file /etc/ssl/example.com/cert.pem \
+--key-file /etc/ssl/example.com/key.pem \
+--fullchain-file /etc/ssl/example.com/fullchain.pem \
+--reloadcmd "cd /usr/local/docker-compose && docker-compose exec nginx nginx -g 'daemon on; master_process on;' -s reload"

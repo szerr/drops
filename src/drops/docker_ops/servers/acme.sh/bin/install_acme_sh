@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# 安装 acme.sh
+
+curl https://get.acme.sh | sh -s email=mail@example.com

@@ -1,0 +1,11 @@
+# do daily/weekly/monthly maintenance
+# 注意：换行不能带 \r (CRLF) 会导致 ": No such file or directory"
+# 如果要挂载 crontabs，crontabs 下的文件所属用户必须是root，不然不会生效也不会报错。
+
+# min   hour    day     month   weekday command
+*       *       *       *       *       run-parts /etc/periodic/minute
+*/15    *       *       *       *       run-parts /etc/periodic/15min
+0       *       *       *       *       run-parts /etc/periodic/hourly
+0       2       *       *       *       run-parts /etc/periodic/daily
+0       3       *       *       6       run-parts /etc/periodic/weekly
+0       5       1       *       *       run-parts /etc/periodic/monthly

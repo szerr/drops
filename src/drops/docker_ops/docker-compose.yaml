@@ -1,0 +1,92 @@
+version: '3.0'
+
+services:
+  nginx:
+    # nginx 是 http 服务的核心，所有提供 80 和 443 访问的服务通过虚拟主机连接。
+    # 具体服务配置参照 nginx 配置文件示例
+    image: nginx
+    container_name: nginx
+    restart: always
+    volumes:
+      # ssl 证书存放路径
+      - /srv/drops/docker_ops/nginx/ssl:/etc/ssl:ro
+      # acme.sh 基于文件的证书验证路径
+      - /srv/drops/docker_ops/nginx/acme.sh/.well-known:/var/www/.well-known:ro
+      # nginx 日志
+      - /srv/drops/docker_ops/nginx/log:/var/log/nginx
+      # nginx 相关配置
+      - ./servers/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./servers/nginx/lib:/etc/nginx/lib:ro
+      # 项目文件映射
+      - ./www:/var/www/szerr/www:ro
+      - ./music:/var/www/szerr/music:ro
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      # 等待这些服务启动后运行 nginx
+      - http_server
+
+  # http 服务示例
+  http_server:
+    build:
+      context: ./servers/http_server
+    container_name: http_server
+    restart: always
+
+  # syncthing 是一个需要在本地局域网做服务发现的服务示例
+  # 这种我建议用 host 网络模式，在 nginx 配虚拟主机用于访问web控制台。
+  # syncthing:
+  #   image: syncthing/syncthing
+  #   container_name: syncthing
+  #   hostname: syncthing
+  #   volumes:
+  #     - /srv/drops/docker_ops/syncthing:/var/syncthing
+  #   network_mode: "host"
+  #   restart: unless-stopped
+
+
+  # 定时任务的示例
+  crond:
+    # 注意，如果需要 crontabs 实时生效，crontabs 下的文件所属用户必须是root，不然不会生效也不会报错。
+    # 不需要实时生效的话，建议更改后重新 build。
+    # alpine 的 crond fork 进程会自动切换到root，更改容器用户会导致 fork 失败。
+    # periodic 的脚本因为是文件夹挂载，是更改后马上生效的。
+    container_name: crond
+    build:
+      context: ./servers/crond # build 的工作目录
+      dockerfile: Dockerfile # build 的 Dockerfile 文件名
+    logging:
+      options:
+        max-size: "128m" # 保留日志大小
+    volumes:
+      # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
+      # - ./crond/known_hosts:/root/.ssh/known_hosts:ro
+      # - ./crond/id_ed25519:/root/.ssh/id_ed25519:ro
+      # 想要在运行时自定义crontabs，取消下面注释。
+      # - ./crond/crontabs:/var/spool/cron/crontabs:ro
+      # 不同时间间隔执行的脚本。
+      - ./servers/crond/periodic:/etc/periodic:ro
+      # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      # 需要的可执行文件映射。
+      - ./servers/crond/bin:/usr/local/bin:ro
+      # 配合 crond 目录里，有关定时增量备份的示例配置。
+      - /srv/backup:/backup
+    restart: always
+  # acme.sh 示例，在写这段的时候，acme.sh 的 docker 官方方案不支持 nginx 证书重载。
+  # acme.sh:
+  #   container_name: acme.sh
+  #   build:
+  #     context: ./servers/acme.sh # build 的工作目录
+  #     dockerfile: Dockerfile # build 的 Dockerfile 文件名
+  #   logging:
+  #     options:
+  #       max-size: "8m" # 保留日志大小
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - /srv/drops/docker_ops/nginx/ssl:/etc/ssl
+  #     - ./servers/acme.sh/bin:/usr/local/bin:ro
+  #     - ./:/usr/local/docker-compose:ro
