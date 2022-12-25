@@ -10,7 +10,7 @@ drops 是基于 ssh 和 docker-compose 的运维模板。
 2. 安装 drops：
 
 ``` sh
-pip install drops
+pip install --upgrade drops
 ```
 
 *注：pip 是 python 的包管理器，视系统可能需要手动安装，像是 apt install python3-pip。*
