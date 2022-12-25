@@ -4,7 +4,7 @@ services:
   nginx:
     # nginx 是 http 服务的核心，所有提供 80 和 443 访问的服务通过虚拟主机连接。
     # 具体服务配置参照 nginx 配置文件示例
-    image: nginx
+    image: nginx:1.22.1
     container_name: nginx
     restart: always
     volumes:
@@ -38,7 +38,7 @@ services:
   # syncthing 是一个需要在本地局域网做服务发现的服务示例
   # 这种我建议用 host 网络模式，在 nginx 配虚拟主机用于访问web控制台。
   # syncthing:
-  #   image: syncthing/syncthing
+  #   image: syncthing/syncthing:1.22
   #   container_name: syncthing
   #   hostname: syncthing
   #   volumes:
