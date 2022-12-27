@@ -25,19 +25,20 @@ cd example
 ### 配置远程服务器
 
 ```sh
-drops host add ssh.example.com 22 root utf-8 -k ~/.ssh/id_ed25519 -g test	# 配置一个默认服务器到 test group。
-drops init_env_debian # debian 系这样初始化远程环境，centos 系用 init_env_centos，要自备 docker 软件源。
+drops host add ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个服务器到默认的 test group。
+drops init_env_debian # debian 系这样初始化远程环境
 ```
-
-如果配置出现问题，请手动安装 `rsync` 和 `docker-compose`
+如果配置出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
+centos 配置太复杂了，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest>  下载安装 docker-compose。
+podman-compose 目前（2022年12月）还是有一些问题，会造成 drops 部署部分不能用。
 
 ### 部署示例服务
-
+默认会下载并启动一个 nginx 容器。
 ```sh
-drops deploy # 同步项目目录到 /usr/local/<项目文件夹名> 并启动容器。
+drops deploy # 同步项目目录到 /usr/local/drops/<项目文件夹名> 并启动容器。
 ```
 
-顺利的话，访问 http://<ip> 可以看到后端返回的数据。
+访问 http://<ip> 可以看到后端返回的数据。
 
 ## 项目背景
 
@@ -47,9 +48,9 @@ drops deploy # 同步项目目录到 /usr/local/<项目文件夹名> 并启动�
 - 用容器保证环境一致。
 - 做版本控制，保证运维操作可追踪可回溯。
 - 不要手动编辑线上和测试的配置文件，不要在线调试。
-- 所有更改上测试通过之后传版本控制，再自动部署到线上；出问题马上回滚。
-- 应用发布的包，静态文件，也应该纳入运维项目的版本控制。
-- 对应用数据做快照和备份。
+- 所有更改上测试通过之后传版本控制，再部署到线上；出问题马上回滚。
+- 应用发布的包，静态文件，也应该纳入运维项目的版本控制，和服务配置绑定。
+- 考虑对应用数据做冗余、快照和备份。
 
 ## 项目管理
 
@@ -80,13 +81,13 @@ drops deploy # 同步项目目录到 /usr/local/<项目文件夹名> 并启动�
 - 运行时可变的是服务产生的数据，如：用户数据， 日志，数据库
 - 运行时不可变的，如：程序，服务配置，静态文件
 
-运行时可变的数据是放到`/srv/drops/<项目名>/<服务名>/<映射到容器的文件夹>`。
+运行时可变的数据是放到`/srv/drops/<项目名>/<服务名>/<映射到容器的文件夹>`，这是建议做冗余、快照和备份的地方。
 
 不变的数据放到`servers`下并做版本控制。
 
 如果拿不准，就考虑数据是否需要版本控制，需要的话就放到`servers`下。
 
-## drops 命令帮助
+## drops 命令
 
 | drops 命令         | 功能                                                         |
 | ------------------ | ------------------------------------------------------------ |
@@ -100,16 +101,15 @@ drops deploy # 同步项目目录到 /usr/local/<项目文件夹名> 并启动�
 | `stop`             | 停止容器。                                                   |
 | `kill`             | 杀掉容器。                                                   |
 | `rm`               | 删除容器。                                                   |
-| `nginxReload`      | 对容器`nginx`执行`nginx -s reload`。                         |
-| `nginxForceReload` | 更新`nginx`证书时，用这个脚本执行 `reload`。                 |
-| `init_env_debian`  | 初始化远程服务器环境`Debian`系用。                           |
-| `init_env_centos`  | 初始化远程服务器环境`Centos`系用。                           |
+| `nginx_reload`      | 对容器`nginx`执行`nginx -s reload`。                         |
+| `nginx_force_reload` | 更新`nginx`证书时，用这个脚本执行 `reload`。                 |
+| `initDebianEnv`    | 初始化远程服务器环境`Debian`系用。                           |
 | `undeploy`         | 清理掉服务器上的项目和容器。                                 |
 | `clean`            | 删除当前项目下 `drops` 相关的文件。                          |
 
 ## 包含的示例
 
-`docker-compose.yaml` 中可以看到`nginx`、`http_server`、`syncthing` 这三个代表了`http` 服务，`nginx`与`http`的通讯方式，有`socket`，`p2p`和局域网发现的服务配置。`crond` 演示了实现定时任务。
+`docker-compose.yaml` 中可以看到`nginx`，`crond`，`acme.sh`。
 
 `servers/nginx/lib` 中有几个简单的配置
 
