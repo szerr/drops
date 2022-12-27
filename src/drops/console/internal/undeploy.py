@@ -22,10 +22,13 @@ def add_undeploy_cmd(s):
     p = s.add_parser(
         'undeploy', help='清理掉容器和 ' + internal.work_dir)
     internal.add_arg_group_host(p)
+    internal.add_arg_force(p)
     p.set_defaults(func=undeploy_cmd)
 
 
 def undeploy_cmd(p):
+    if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及其相关配置，但不会完全删除映射文件。是否继续？'):
+        return
     hosts = internal.get_arg_group_host_from_conf(p)
     print('---------- kill ----------')
     internal.docker_compose_cmd('kill', hosts)

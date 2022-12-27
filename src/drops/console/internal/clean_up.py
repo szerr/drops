@@ -18,12 +18,22 @@
 
 import os
 import shutil
+from . import internal
 
 import drops
 from . import er
 
 
-def new_clean_up(arg):
+def add_clean_up_cmd(s):
+    p = s.add_parser(
+        'clean', help='删除当前目录下 drops 所有相关文件。')
+    internal.add_arg_force(p)
+    p.set_defaults(func=new_clean_up)
+
+
+def new_clean_up(p):
+    if not p.force and not internal.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
+        return
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     pwd = os.getcwd()
     if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):
@@ -35,9 +45,3 @@ def new_clean_up(arg):
             shutil.rmtree(t)
         else:
             os.remove(t)
-
-
-def add_clean_up_cmd(s):
-    p = s.add_parser(
-        'clean', help='删除当前目录下 drops 所有相关文件。')
-    p.set_defaults(func=new_clean_up)

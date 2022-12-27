@@ -72,6 +72,11 @@ def add_arg_service(p):
                    help="docker service name.", type=str, default=None)
 
 
+def add_arg_force(p):
+    p.add_argument("-f", '--force',
+                   help="强制执行，不再提示确认。", default=False, action='store_true')
+
+
 def add_arg_group(p):
     p.add_argument("group",
                    help="host group.", type=str, default='test', nargs='?')
@@ -205,18 +210,19 @@ def exec(cmd, hosts):
     return 0
 
 
-def user_confirm(s):
+def user_confirm(*l):
+    s = ' '.join(l)
     for _ in range(3):
-        a = input(s, 'Y/n')
+        a = input(s + '[Y/n]')
         if a == 'Y':
             return True
         elif a == 'n':
             return False
-    print("取消操作")
+    print("用户取消。")
     return False
 
 
-def confirmDropsProject(host):
+def confirm_drops_project(host):
     # 防止出现同步时误删除，同步前检查目录。
     c = ssh.Client(**host.to_conf())
     _, s = c.exec('ls '+work_dir, False)
