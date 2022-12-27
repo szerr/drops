@@ -40,7 +40,7 @@ class Client():
 
         self.coding = coding
 
-    def exec(self, b):
+    def exec(self, b, show=True):
         # 返回标准输出，标准错误，状态码
         # 没有 exit 0 的话会导致命令执行随机返回 -1，貌似是 paramiko 的锅，没找到具体原因。
         # 为了做出类似 ssh 交互式的效果，混合了标准输出和标准错误。并在这一层做输出，屏蔽复杂度。
@@ -48,12 +48,16 @@ class Client():
         stdin, stdout, stderr = self._client.exec_command(
             'exec 2>/dev/stdout && ' + b + ' && exit 0')
         so = ''
-        while True:
-            s = stdout.readline()
-            if s == '':
-                break
-            print(s, end='')
-            so += s
+        # 命令执行过程可能很长，所以在这里按行处理输出。
+        if show:
+            while True:
+                s = stdout.readline()
+                if s == '':
+                    break
+                print(s, end='')
+                so += s
+        else:
+            so = stdout.read()
         return so, stdout.channel.exit_status
 
     def exed(self, b):

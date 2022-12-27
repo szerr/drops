@@ -18,7 +18,6 @@
 
 from .command import *
 from .deploy import *
-from .init_remove_env_centos import *
 from .init_remove_env_debian import *
 from .internal import *
 from .new import *
@@ -32,6 +31,9 @@ from .host import *
 from .stop import *
 from .rm import *
 from .kill import *
+from .up import *
+from .start import *
+from .restart import *
 
 # TODO 去掉这个
 from .clean_up import *
@@ -47,12 +49,14 @@ def initCmd(s):
     add_deploy_cmd(s)
     add_redeploy_cmd(s)
     add_init_env_debian_cmd(s)
-    add_init_env_centos_cmd(s)
     add_nginx_reload_cmd(s)
     add_nginx_force_reload_cmd(s)
     add_stop_cmd(s)
     add_rm_cmd(s)
     add_kill_cmd(s)
+    add_up_cmd(s)
+    add_start_cmd(s)
+    add_restart_cmd(s)
 
     # TODO 去掉这个
     add_clean_up_cmd(s)

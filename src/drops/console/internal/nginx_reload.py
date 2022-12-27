@@ -20,7 +20,7 @@ from . import internal
 
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
-        'nginx_reload', help='重载 nginx 配置，不会重载证书。')
+        'nginxReload', help='重载 nginx 配置，不会重载证书。')
     internal.add_arg_group_host(p)
     p.set_defaults(func=nginx_reload_cmd)
 

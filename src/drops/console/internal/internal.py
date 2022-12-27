@@ -24,7 +24,7 @@ from . import ssh
 from . import config
 
 port = 22  # 默认端口
-deploy_path = "/usr/local/"  # 部署到服务器的路径
+deploy_path = "/usr/local/drops/"  # 部署到服务器的路径
 # 进入工作目录，默认是项目所在目录的目录名，部署时会同步文件到这个路径。
 work_dir = deploy_path + os.path.split(os.getcwd())[-1]
 
@@ -42,9 +42,9 @@ docker_cmd_template = 'cd ' + \
 
 # rsync 同步文件的命令模板
 # key 登录
-rsync_cmd_template_key = '''rsync -avzP --del -e "ssh -p %d -i %s" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
+rsync_cmd_template_key = '''rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
 # 密码登录
-rsync_cmd_template_pwd = '''sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
+rsync_cmd_template_pwd = '''sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
 
 
 def Fatal(*e):
@@ -117,6 +117,12 @@ def rsync_cmd(hosts):
     if not detection_cmd('rsync'):
         raise er.RsyncNotExist
     for i in hosts.values():
+        # if not confirmDropsProject(i):
+        #     return
+        c = ssh.Client(**i.to_conf())
+        _, status = c.exec(' mkdir -p ' + deploy_path)
+        if status != 0:
+            raise er.CmdExecutionError('mkdir -p ' + deploy_path)
         if i.key:
             os.system(rsync_cmd_template_key %
                       (i.port, i.key, i.username, i.host))
@@ -199,31 +205,28 @@ def exec(cmd, hosts):
     return 0
 
 
-def exed(cmd, hosts):
-    # 之前的命令执行方式，备份代码。
-    # 对 host 执行任意远程命令
-    result = {}
-    for host in hosts.values():
-        c = ssh.Client(**host.to_conf())
-        result[host.host] = c.exed(cmd)
+def user_confirm(s):
+    for _ in range(3):
+        a = input(s, 'Y/n')
+        if a == 'Y':
+            return True
+        elif a == 'n':
+            return False
+    print("取消操作")
+    return False
 
-    success = {k: i for k, i in result.items() if i[2] == 0}
-    fail = {k: i for k, i in result.items() if i[2] != 0}
 
-    print('---------------- success ----------------')
-    for k, i in success.items():
-        print(k)
-        print(i[0])
-        if i[1]:
-            print(i[1])
+def confirmDropsProject(host):
+    # 防止出现同步时误删除，同步前检查目录。
+    c = ssh.Client(**host.to_conf())
+    _, s = c.exec('ls '+work_dir, False)
 
-    if fail:
-        print('----------------- fail -----------------')
-        for k, i in fail.items():
-            print(k)
-            print(i[0])
-            if i[1]:
-                print(i[1])
-            print("exit code:", i[2])
-        raise er.CmdExecutionError(cmd)
-    return 0
+    # 目录不存在时可以安全同步
+    if s != 0:
+        return True
+    _, status = c.exec('ls '+work_dir+'/docker-compose.yaml', False)
+
+    # 目录存在，却没有 docker-compose，可能不是 drops 项目
+    if status == 0:
+        return True
+    return False

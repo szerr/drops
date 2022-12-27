@@ -98,14 +98,19 @@ drops deploy # 同步项目目录到 /usr/local/drops/<项目文件夹名> 并�
 | `redeploy`         | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
 | `sync`             | 同步项目到服务器。                                           |
 | `ps`               | 查看当前运行的容器。                                         |
+| `start`             | 启动容器。                                                   |
+| `up`             | 创建和启动容器。                                                   |
+| `restart`             | 重启容器。                                                   |
 | `stop`             | 停止容器。                                                   |
 | `kill`             | 杀掉容器。                                                   |
 | `rm`               | 删除容器。                                                   |
-| `nginx_reload`      | 对容器`nginx`执行`nginx -s reload`。                         |
-| `nginx_force_reload` | 更新`nginx`证书时，用这个脚本执行 `reload`。                 |
+| `nginxReload`      | 对容器`nginx`执行`nginx -s reload`。                         |
+| `nginxForceReload` | 更新`nginx`证书时，用这个脚本执行 `reload`。                 |
 | `initDebianEnv`    | 初始化远程服务器环境`Debian`系用。                           |
 | `undeploy`         | 清理掉服务器上的项目和容器。                                 |
 | `clean`            | 删除当前项目下 `drops` 相关的文件。                          |
+`--help` 查看更多参数。
+`start`、`up`、`restart`、`stop`、`kill`、`rm` 默认对所有容器操作，可以用 -s 指定一个容器。
 
 ## 包含的示例
 

@@ -21,7 +21,7 @@ from . import internal
 
 def add_init_env_debian_cmd(s):
     p = s.add_parser(
-        'init_env_debian', help='初始化 debian 系远程环境。')
+        'initDebianEnv', help='初始化 debian 系远程环境。')
     internal.add_arg_group_host(p)
     p.set_defaults(func=init_env_debian_cmd)
 

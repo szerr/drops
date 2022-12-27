@@ -15,18 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
-
 from . import internal
 
 
-def add_nginx_force_reload_cmd(s):
+def add_start_cmd(s):
     p = s.add_parser(
-        'nginxForceReload', help="重载 nginx 配置，会重载证书。")
+        'start', help='启动容器。')
     internal.add_arg_group_host(p)
-    p.set_defaults(func=nginx_force_reload_cmd)
+    internal.add_arg_service(p)
+    p.set_defaults(func=start_cmd)
 
 
-def nginx_force_reload_cmd(p):
+def start_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    internal.exec(internal.docker_cmd_template %
-                  "exec -d nginx nginx -g 'daemon on; master_process on;' -s reload", hosts)
+    b = 'start'
+    if p.service:
+        b += ' ' + p.service
+    return internal.docker_compose_cmd(b, hosts)

@@ -15,18 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
-
 from . import internal
 
 
-def add_init_env_centos_cmd(s):
+def add_restart_cmd(s):
     p = s.add_parser(
-        'init_env_centos', help='初始化 centos 系远程环境，请自备 docker 源。')
+        'restart', help='重启容器。')
     internal.add_arg_group_host(p)
-    p.set_defaults(func=init_env_centos_cmd)
+    internal.add_arg_service(p)
+    p.set_defaults(func=restart_cmd)
 
 
-def init_env_centos_cmd(p):
+def restart_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    bin = 'yum install -y rsync docker-compose'
-    internal.exec(bin, hosts)
+    b = 'restart'
+    if p.service:
+        b += ' ' + p.service
+    return internal.docker_compose_cmd(b, hosts)
