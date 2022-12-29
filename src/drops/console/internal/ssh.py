@@ -57,7 +57,11 @@ class Client():
                 print(s, end='')
                 so += s
         else:
-            so = stdout.read()
+            while True:
+                s = stdout.read()
+                if s == b'':
+                    break
+                so += s
         return so, stdout.channel.exit_status
 
     def exed(self, b):

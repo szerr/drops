@@ -16,6 +16,7 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 from . import internal
+from . import er
 
 
 def add_rm_cmd(s):
@@ -32,8 +33,8 @@ def rm_cmd(p):
     b = 'rm -f'
     if p.service:
         if not p.force and not internal.user_confirm('确认删除 ', p.service, '？'):
-            return
+            raise er.UserCancel
         b += ' ' + p.service
     if not p.force and not internal.user_confirm('确认删除所有容器？'):
-        return
+        raise er.UserCancel
     return internal.docker_compose_cmd(b, hosts)

@@ -33,7 +33,7 @@ def add_clean_up_cmd(s):
 
 def new_clean_up(p):
     if not p.force and not internal.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
-        return
+        raise er.UserCancel
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     pwd = os.getcwd()
     if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):

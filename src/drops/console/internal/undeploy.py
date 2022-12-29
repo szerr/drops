@@ -16,6 +16,7 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 from . import internal
+from . import er
 
 
 def add_undeploy_cmd(s):
@@ -28,7 +29,7 @@ def add_undeploy_cmd(s):
 
 def undeploy_cmd(p):
     if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及其相关配置，但不会完全删除映射文件。是否继续？'):
-        return
+        raise er.UserCancel
     hosts = internal.get_arg_group_host_from_conf(p)
     print('---------- kill ----------')
     internal.docker_compose_cmd('kill', hosts)

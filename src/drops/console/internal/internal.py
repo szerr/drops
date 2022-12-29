@@ -30,7 +30,7 @@ deploy_path = "/usr/local/drops/"  # 部署到服务器的路径
 
 def work_dir():
     c = config.Conf()
-    return deploy_path + '/' + c.getProjectName()
+    return deploy_path + c.getProjectName()
 
 
 def docker_cmd_template(cmd):
@@ -113,6 +113,7 @@ def gen_ssh_cmd():
 
 
 def detection_cmd(b):
+    # 确认命令是否存在
     for p in os.environ['PATH'].split(':'):
         if os.path.isdir(p) and b in os.listdir(p):
             return True
@@ -124,19 +125,22 @@ def rsync_cmd(hosts):
     # 同步项目到远程目录
     if not detection_cmd('rsync'):
         raise er.RsyncNotExist
-    for i in hosts.values():
+    for host in hosts.values():
         # if not confirmDropsProject(i):
         #     return
-        c = ssh.Client(**i.to_conf())
+        if not confirm_drops_project(host):
+            if not user_confirm("主机 %s 远程目录可能不是 drops 项目，是否继续同步？" % host.host):
+                raise er.UserCancel
+        c = ssh.Client(**host.to_conf())
         _, status = c.exec(' mkdir -p ' + deploy_path)
         if status != 0:
             raise er.CmdExecutionError('mkdir -p ' + deploy_path)
-        if i.key:
+        if host.key:
             os.system(rsync_cmd_template_key(
-                i.port, i.key, i.username, i.host))
+                host.port, host.key, host.username, host.host))
         else:
             os.system(rsync_cmd_template_pwd(
-                i.password, i.port, i.username, i.host))
+                host.password, host.port, host.username, host.host))
 
 
 def docker_compose_cmd(cmd, hosts):
@@ -172,26 +176,39 @@ def exec(cmd, hosts):
 def user_confirm(*l):
     s = ' '.join(l)
     for _ in range(3):
-        a = input(s + '[Y/n]')
+        try:
+            a = input(s + '[Y/n]')
+        except KeyboardInterrupt:
+            return False
         if a == 'Y':
             return True
         elif a == 'n':
             return False
-    print("用户取消。")
     return False
 
 
 def confirm_drops_project(host):
     # 防止出现同步时误删除，同步前检查目录。
     c = ssh.Client(**host.to_conf())
-    _, s = c.exec('ls '+work_dir(), False)
 
+    # 目录存在返回0，否则返回1
+    while True:
+        _, s = c.exec(
+            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % work_dir(), False)
+        if s != -1:
+            break
     # 目录不存在时可以安全同步
-    if s != 0:
+    if s == 1:
         return True
-    _, status = c.exec('ls '+work_dir()+'/docker-compose.yaml', False)
+    b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
+        work_dir()+'/docker-compose.yaml', work_dir()+'/servers')
 
-    # 目录存在，却没有 docker-compose，可能不是 drops 项目
-    if status == 0:
+    while True:
+        _, s = c.exec(b, False)
+        # 这条命令很容易返回 -1，貌似是 paramiko 的锅。重试。
+        if s != -1:
+            break
+    # 目录存在，却没有 docker-compose 或 servers，可能不是 drops 项目
+    if s == 0:
         return True
     return False
