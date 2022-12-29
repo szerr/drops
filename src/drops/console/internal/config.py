@@ -33,7 +33,9 @@ class Host():
         self.coding = coding
 
     def __dict__(self):
-        return {'host': self.host, 'port': self.port, 'username': self.username, 'password': self.password, 'key': self.key, 'coding': self.coding}
+        return {'host': self.host, 'port': self.port,
+                'username': self.username, 'password': self.password,
+                'key': self.key, 'coding': self.coding}
 
     def to_conf(self):
         t = {'host': self.host, 'port': self.port,
@@ -48,6 +50,7 @@ class Host():
 
 
 class Conf():
+    # 封装配置文件
     def __init__(self):
         self.C = None
 
@@ -63,6 +66,24 @@ class Conf():
                 self.C['hosts'] = {}
             return self
 
+    def setProjectName(self, n):
+        self.open()
+        # 设置项目名
+        p = self.C.get('project', {})
+        p['name'] = n
+        self.C['project'] = p
+        self.save()
+        return self
+
+    def getProjectName(self):
+        self.open()
+        # 0.1.6 之前项目名用的文件夹名，做个兼容。
+        if 'project' not in self.C:
+            n = os.path.split(os.getcwd())[-1]
+            self.setProjectName(n)
+            self.save()
+        return self.C['project']['name']
+
     def save(self):
         with open(globals.confFileName, 'w') as fd:
             fd.write(yaml.dump(self.C))
@@ -76,7 +97,7 @@ class Conf():
         return self
 
     def add_host(self, group, host, port=22, username='root', password=None, key=None, coding='utf-8'):
-        # 增加 host，coding 为服务器 shell 编码
+        # 增加 主机配置。coding 为服务器 shell 编码
         self.open()
         g = self.C['hosts'].get(group, {})
         if g is None:

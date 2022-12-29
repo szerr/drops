@@ -26,25 +26,28 @@ from . import config
 port = 22  # 默认端口
 deploy_path = "/usr/local/drops/"  # 部署到服务器的路径
 # 进入工作目录，默认是项目所在目录的目录名，部署时会同步文件到这个路径。
-work_dir = deploy_path + os.path.split(os.getcwd())[-1]
 
-# 切换到工作目录的命令
-go_to_work_dir = 'cd ' + work_dir
 
-# 结合 ssh，登录后切换到工作目录执行命令的模板，整体看起来像是这样：
-#  "cd <work_dir> && %s"
-go_to_work_dir_template = ' "cd ' + work_dir + ' && %s"'
+def work_dir():
+    c = config.Conf()
+    return deploy_path + '/' + c.getProjectName()
 
-# 执行 docker-compose 命令的模板，看起来像是这样：
-#  cd <work_dir> && docker-compose %s"
-docker_cmd_template = 'cd ' + \
-    work_dir + ' && docker-compose %s'
+
+def docker_cmd_template(cmd):
+    # 执行 docker-compose 命令的模板，看起来像是这样：
+    #  cd <work_dir> && docker-compose %s"
+    return 'cd ' + work_dir() + ' && docker-compose %s' % cmd
+
 
 # rsync 同步文件的命令模板
-# key 登录
-rsync_cmd_template_key = '''rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
-# 密码登录
-rsync_cmd_template_pwd = '''sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'''+work_dir
+def rsync_cmd_template_key(password, port, username, host):
+    # key 登录
+    return ('rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'+work_dir()) % (password, port, username, host)
+
+
+def rsync_cmd_template_pwd(password, port, username, host):
+    # 密码登录
+    return ('sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" . %s@%s:'+work_dir()) % (password, port, username, host)
 
 
 def Fatal(*e):
@@ -129,55 +132,11 @@ def rsync_cmd(hosts):
         if status != 0:
             raise er.CmdExecutionError('mkdir -p ' + deploy_path)
         if i.key:
-            os.system(rsync_cmd_template_key %
-                      (i.port, i.key, i.username, i.host))
+            os.system(rsync_cmd_template_key(
+                i.port, i.key, i.username, i.host))
         else:
-            os.system(rsync_cmd_template_pwd %
-                      (i.password, i.port, i.username, i.host))
-
-
-def docker_cmd(template):
-    # docker_cmd 解析命令行参数，获取 <container> <cmd>
-    # 接收一个字符串模板，内容是 docker-compose 后的部分
-    # 拼接进入工作目录的命令，先后传入 (container, cmd) 并返回。
-    # 对特定容器执行命令。
-
-    add_container_arg()
-
-    template = template % (p.container[0], '%s')
-    template = template % (' '.join(p.cmd))
-    if p.port:
-        port = "-p %d" % p.port
-    else:
-        port = ""
-    return go_to_work_dir_template % (p.destination[0], port, template)
-
-
-def docker_container(template):
-    # docker_container 解析命令行参数，获取 <container>
-    # 接收一个字符串模板，内容是 docker-compose 后的部分
-    # 拼接进入工作目录的命令，传入 container 并返回。
-    # 对特定容器执行命令。
-
-    add_container_arg()
-
-    template = template % (p.container[0])
-    if p.port:
-        port = "-p %d" % p.port
-    else:
-        port = ""
-    return go_to_work_dir_template % (p.destination[0], port, template)
-
-
-def docker_container_cmd(p, desc):
-    # docker_container_cmd 解析命令行参数，获取 <cmd>
-    # 执行 docker-compose <cmd>
-
-    if p.port:
-        port = "-p %d" % p.port
-    else:
-        port = ""
-    return docker_cmd_template % (p.destination[0], port, ' '.join(p.cmd))
+            os.system(rsync_cmd_template_pwd(
+                i.password, i.port, i.username, i.host))
 
 
 def docker_compose_cmd(cmd, hosts):
@@ -188,7 +147,7 @@ def docker_compose_cmd(cmd, hosts):
     for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
-    return exec(docker_cmd_template % cmd, hosts)
+    return exec(docker_cmd_template(cmd), hosts)
 
 
 def exec(cmd, hosts):
@@ -225,12 +184,12 @@ def user_confirm(*l):
 def confirm_drops_project(host):
     # 防止出现同步时误删除，同步前检查目录。
     c = ssh.Client(**host.to_conf())
-    _, s = c.exec('ls '+work_dir, False)
+    _, s = c.exec('ls '+work_dir(), False)
 
     # 目录不存在时可以安全同步
     if s != 0:
         return True
-    _, status = c.exec('ls '+work_dir+'/docker-compose.yaml', False)
+    _, status = c.exec('ls '+work_dir()+'/docker-compose.yaml', False)
 
     # 目录存在，却没有 docker-compose，可能不是 drops 项目
     if status == 0:

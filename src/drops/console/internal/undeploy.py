@@ -20,7 +20,7 @@ from . import internal
 
 def add_undeploy_cmd(s):
     p = s.add_parser(
-        'undeploy', help='清理掉容器和 ' + internal.work_dir)
+        'undeploy', help='清理掉服务器上的容器和项目')
     internal.add_arg_group_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=undeploy_cmd)
@@ -34,5 +34,5 @@ def undeploy_cmd(p):
     internal.docker_compose_cmd('kill', hosts)
     print('--------- rm -f ---------')
     internal.docker_compose_cmd('rm -f', hosts)
-    print('-------- rm -rf %s --------' % internal.work_dir)
-    internal.exec('rm -rf %s' % internal.work_dir, hosts)
+    print('-------- rm -rf %s --------' % internal.work_dir())
+    internal.exec('rm -rf %s' % internal.work_dir(), hosts)

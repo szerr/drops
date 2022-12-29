@@ -20,21 +20,30 @@ import os
 import shutil
 
 import drops
-
-
-def new_init(arg):
-    objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    pwd = os.getcwd()
-    for i in os.listdir(objPath):
-        p = os.path.join(objPath, i)
-        t = os.path.join(pwd, i)
-        if os.path.isdir(p):
-            shutil.copytree(p, t)
-        else:
-            shutil.copyfile(p, t)
+from .config import Conf
 
 
 def add_init_cmd(s):
     p = s.add_parser(
-        'init', help='Initialize the drops project in the current path.')
+        'init', help='在当前目录初始化项目。')
     p.set_defaults(func=new_init)
+    p.add_argument("projectName", metavar="projectName",
+                   type=str, help="项目名。", nargs='?')
+
+
+def new_init(p):
+    objPath = os.path.join(drops.__path__[0], 'docker_ops')
+    pwd = os.getcwd()
+    if p.projectName == None:
+        p.projectName = os.path.split(pwd)[-1]
+
+    for i in os.listdir(objPath):
+        s = os.path.join(objPath, i)
+        t = os.path.join(pwd, i)
+        if os.path.isdir(s):
+            shutil.copytree(s, t)
+        else:
+            shutil.copyfile(s, t)
+
+    c = Conf()
+    c.setProjectName(p.projectName)

@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
+from .clean_up import *
+from .undeploy import *
 
-from .command import *
 from .deploy import *
 from .init_remove_env_debian import *
 from .internal import *
@@ -34,13 +35,13 @@ from .kill import *
 from .up import *
 from .start import *
 from .restart import *
-
-# TODO 去掉这个
-from .clean_up import *
-from .undeploy import *
+from .project import *
 
 
 def initCmd(s):
+    add_clean_up_cmd(s)
+    add_undeploy_cmd(s)
+
     add_new_cmd(s)
     add_ps_cmd(s)
     add_init_cmd(s)
@@ -57,7 +58,4 @@ def initCmd(s):
     add_up_cmd(s)
     add_start_cmd(s)
     add_restart_cmd(s)
-
-    # TODO 去掉这个
-    add_clean_up_cmd(s)
-    add_undeploy_cmd(s)
+    add_project_cmd(s)

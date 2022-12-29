@@ -20,21 +20,27 @@ import os
 import shutil
 
 import drops
-from . import internal
 
 
 def new_cmd(arg):
+    from . import config
+    from . import internal
+
     if arg.name in os.listdir(os.getcwd()):
         internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.name))
         return
     objPath = drops.__path__[0]
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
                     os.path.join(os.getcwd(), arg.name))
+    os.chdir(arg.name)
+    c = config.Conf().open()
+    c.setProjectName(arg.name)
+    c.save()
 
 
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
     p.add_argument("name", metavar="name",
-                   type=str, help="the name of a new project.")
+                   type=str, help="项目名。")
     p.set_defaults(func=new_cmd)

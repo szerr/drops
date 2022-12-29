@@ -15,13 +15,27 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
-
-import os
-
-from . import internal
-
-desc = '''执行任意 docker-compose <cmd> <container> 命令，例如 ./cmd.py debian kill nginx 杀掉主机 debian 上的 nginx 容器'''
+from . import config
 
 
-def main():
-    os.system(internal.docker_container_cmd(desc))
+def add_project_cmd(s):
+    p = s.add_parser(
+        'project', help='项目信息')
+    p.set_defaults(func=project_cmd)
+
+    subparsers = p.add_subparsers(metavar="")
+    n = subparsers.add_parser('name')
+    n.add_argument('name', help="传入参数设置项目名，没有参数输出项目名",
+                   type=str, nargs='?', default=None)
+
+
+def project_cmd(p):
+    c = config.Conf().open()
+    if 'name' in p:
+        if p.name == None:
+            print(c.getProjectName())
+        else:
+            c.setProjectName(p.name)
+    else:
+        for k, i in c.C['project'].items():
+            print(k, ': ', i, sep='')
