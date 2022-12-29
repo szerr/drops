@@ -121,14 +121,14 @@ def detection_cmd(b):
         return False
 
 
-def rsync_cmd(hosts):
+def rsync_cmd(hosts, force=False):
     # 同步项目到远程目录
     if not detection_cmd('rsync'):
         raise er.RsyncNotExist
     for host in hosts.values():
         # if not confirmDropsProject(i):
         #     return
-        if not confirm_drops_project(host):
+        if not force and not confirm_drops_project(host):
             if not user_confirm("主机 %s 远程目录可能不是 drops 项目，是否继续同步？" % host.host):
                 raise er.UserCancel
         c = ssh.Client(**host.to_conf())

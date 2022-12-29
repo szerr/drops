@@ -23,9 +23,10 @@ def add_sync_cmd(s):
     p = s.add_parser(
         'sync', help='使用 rsync 当前项目（本文件的上一级目录）到远程服务器')
     internal.add_arg_group_host(p)
+    internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
 
 
 def sync_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.rsync_cmd(hosts)
+    return internal.rsync_cmd(hosts, p.force)
