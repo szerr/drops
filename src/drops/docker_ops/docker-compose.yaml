@@ -3,7 +3,6 @@ version: '3.0'
 services:
   nginx:
     image: nginx:1.22.1
-    container_name: nginx
     restart: on-failure
     logging:
       options:
@@ -34,7 +33,6 @@ services:
   #   # 不需要实时生效的话，建议更改后重新 build。
   #   # alpine 的 crond fork 进程会自动切换到root，更改容器用户会导致 fork 失败。
   #   # periodic 的脚本因为是文件夹挂载，是更改后马上生效的。
-  #   container_name: crond
   #   build:
   #     context: ./servers/crond # build 的工作目录
   #     dockerfile: Dockerfile # build 的 Dockerfile 文件名
@@ -59,7 +57,6 @@ services:
   #   restart: always
   # acme.sh 示例，在写这段的时候，acme.sh 的 docker 官方方案不支持 nginx 证书重载。
   # acme.sh:
-  #   container_name: acme.sh
   #   build:
   #     context: ./servers/acme.sh # build 的工作目录
   #     dockerfile: Dockerfile # build 的 Dockerfile 文件名
