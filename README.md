@@ -98,9 +98,9 @@ drops deploy # 同步项目目录到 /usr/local/drops/<项目文件夹名> 并�
 | `redeploy`         | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
 | `sync`             | 同步项目到服务器。                                           |
 | `ps`               | 查看当前运行的容器。                                         |
-| `start`             | 启动容器。                                                   |
-| `up`             | 创建和启动容器。                                                   |
-| `restart`             | 重启容器。                                                   |
+| `start`            | 启动容器。                                                   |
+| `up`               | 创建和启动容器。                                             |
+| `restart`          | 重启容器。                                                   |
 | `stop`             | 停止容器。                                                   |
 | `kill`             | 杀掉容器。                                                   |
 | `rm`               | 删除容器。                                                   |
@@ -109,8 +109,11 @@ drops deploy # 同步项目目录到 /usr/local/drops/<项目文件夹名> 并�
 | `initDebianEnv`    | 初始化远程服务器环境`Debian`系用。                           |
 | `undeploy`         | 清理掉服务器上的项目和容器。                                 |
 | `clean`            | 删除当前项目下 `drops` 相关的文件。                          |
-`--help` 查看更多参数。
+| `drops project name` | 输出或更改项目名，也就是部署到`/usr/local/drops/`下的文件夹名  |
+
+`--help` 查看更多帮助。
 `start`、`up`、`restart`、`stop`、`kill`、`rm` 默认对所有容器操作，可以用 -s 指定一个容器。
+`-f` 强制执行，隐藏需要确认的选项。
 
 ## 包含的示例
 
