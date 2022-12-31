@@ -43,6 +43,8 @@ def host_cmd(a):
         config.Conf().drop_host(group=a.group, host=a.host)
     elif a.cmd == 'ls':
         config.Conf().ls()
+    else:
+        config.Conf().ls()
 
 
 def add_host_cmd(s):
@@ -50,7 +52,8 @@ def add_host_cmd(s):
         'host', help='Manage drops hosts. password and key must write one.')
     p.add_argument("-g", '--group',
                    help="Add to host group (default to test host group).", type=str, default='test')
-    p.add_argument('cmd', type=str, help="ls, add, drop, change")
+    p.add_argument('cmd', type=str, choices=[
+                   'ls', 'add', 'drop', 'change'], nargs='?')
     p.add_argument("host", metavar="ssh.example.com",
                    type=str, help="host.", default=None, nargs='?')
     p.add_argument("port", metavar="22",
