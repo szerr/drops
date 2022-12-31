@@ -53,7 +53,7 @@ def add_host_cmd(s):
     p.add_argument("-g", '--group',
                    help="Add to host group (default to test host group).", type=str, default='test')
     p.add_argument('cmd', type=str, choices=[
-                   'ls', 'add', 'drop', 'change'], nargs='?')
+                   'ls', 'add', 'drop', 'change'], nargs='?', help="default ls")
     p.add_argument("host", metavar="ssh.example.com",
                    type=str, help="host.", default=None, nargs='?')
     p.add_argument("port", metavar="22",
