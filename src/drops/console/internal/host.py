@@ -42,9 +42,7 @@ def host_cmd(a):
             raise er.ArgsError('the following arguments are required:', 'host')
         config.Conf().drop_host(group=a.group, host=a.host)
     elif a.cmd == 'ls':
-        config.Conf().ls(group=a.group, host=a.host)
-    else:
-        raise er.ArgsError('cmd must be [ ls, add, drop, change ]')
+        config.Conf().ls()
 
 
 def add_host_cmd(s):
@@ -62,7 +60,7 @@ def add_host_cmd(s):
     p.add_argument('coding', metavar="coding",
                    type=str, help="shell coding, default is utf-8.", default='utf-8', nargs='?')
     p.add_argument("-p", '--password',
-                   type=str, help="ssh password", default=None)
+                   type=str, help="ssh password. Note that the password is stored in plain text, and key verification is strongly recommended.", default=None)
     p.add_argument("-k", '--key', metavar="~/.ssh/id_ed25519",
                    type=str, help="ssh key path", default=None)
     p.set_defaults(func=host_cmd)
