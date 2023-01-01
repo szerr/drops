@@ -29,4 +29,4 @@ def add_nginx_force_reload_cmd(s):
 def nginx_force_reload_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
     internal.exec(internal.docker_cmd_template(
-        "exec -d nginx nginx -g 'daemon on; master_process on;' -s reload"), hosts)
+        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), hosts)

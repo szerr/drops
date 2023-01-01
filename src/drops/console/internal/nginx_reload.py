@@ -27,4 +27,4 @@ def add_nginx_reload_cmd(s):
 
 def nginx_reload_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.docker_compose_cmd('exec -d nginx nginx -s reload', hosts)
+    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', hosts)
