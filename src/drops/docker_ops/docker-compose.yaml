@@ -1,34 +1,47 @@
-version: '3.0'
+version: '3.4'
 
 services:
   nginx:
-    image: nginx:1.22.1
+    image: nginx:1.22
     restart: on-failure
-    logging:
-      options:
-        max-size: "100m" # 保留日志大小
     volumes:
-      # ssl 证书存放路径
-      # - /srv/drops/docker_ops/nginx/ssl:/etc/ssl:ro
-      # acme.sh 基于文件的证书验证路径
-      # - /srv/drops/docker_ops/nginx/acme.sh/.well-known:/var/www/.well-known:ro
-      # nginx 日志，
-      - /srv/drops/docker_ops/nginx/log:/var/log/nginx
+      - ./volumes/nginx/ssl:/etc/nginx/ssl
+      # acme.sh 的证书验证路径
+      - ./volumes/nginx/well-known:/var/www/.well-known:ro
+      # nginx 日志
+      - ./volumes/nginx/log:/var/log/nginx
       # nginx 相关配置
       - ./servers/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./servers/nginx/lib:/etc/nginx/lib:ro
       # 项目文件映射
-      - ./html:/var/html:ro
+      - ./release/html:/var/www/html:ro
+    labels:
+      - sh.acme.autoload.domain=drops
     ports:
       - 80:80
-      # - 443:443
-    # depends_on:
-      # 等待这些服务启动后运行 nginx
+      - 443:443
+      # depends_on:
+      # nginx 依赖的服务写在这。这些服务启动后 nginx 开始启动。
       # - http_server
 
-  # 定时任务的示例
+  acme.sh:
+    image: neilpang/acme.sh:latest
+    command: daemon
+    volumes:
+      - ./volumes/acme.sh/acmeout:/acme.sh
+      - ./volumes/nginx/well-known:/var/www/.well-known
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./servers/acme.sh/redeploy-ssl:/usr/bin/redeploy-ssl:ro
+    environment:
+      - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=drops
+      - DEPLOY_DOCKER_CONTAINER_KEY_FILE=/etc/nginx/ssl/drops/key.pem
+      - DEPLOY_DOCKER_CONTAINER_CERT_FILE="/etc/nginx/ssl/drops/cert.pem"
+      - DEPLOY_DOCKER_CONTAINER_CA_FILE="/etc/nginx/ssl/drops/ca.pem"
+      - DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE="/etc/nginx/ssl/drops/full.pem"
+      - DEPLOY_DOCKER_CONTAINER_RELOAD_CMD="nginx -g 'daemon on; master_process on;' -s reload" # service nginx force-reload 不会报错
   # crond:
+  #   # 定时任务的示例
   #   # 注意，如果需要 crontabs 实时生效，crontabs 下的文件所属用户必须是root，不然不会生效也不会报错。
   #   # 不需要实时生效的话，建议更改后重新 build。
   #   # alpine 的 crond fork 进程会自动切换到root，更改容器用户会导致 fork 失败。
@@ -55,16 +68,3 @@ services:
   #     # 配合 crond 目录里，有关定时增量备份的示例配置。
   #     - /srv/backup:/backup
   #   restart: always
-  # acme.sh 示例，在写这段的时候，acme.sh 的 docker 官方方案不支持 nginx 证书重载。
-  # acme.sh:
-  #   build:
-  #     context: ./servers/acme.sh # build 的工作目录
-  #     dockerfile: Dockerfile # build 的 Dockerfile 文件名
-  #   logging:
-  #     options:
-  #       max-size: "8m" # 保留日志大小
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - /srv/drops/docker_ops/nginx/ssl:/etc/ssl
-  #     - ./servers/acme.sh/bin:/usr/local/bin:ro
-  #     - ./:/usr/local/docker-compose:ro

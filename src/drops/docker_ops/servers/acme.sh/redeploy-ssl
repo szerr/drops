@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# 部署 acme.sh key
+
+# 使用方式参考 https://github.com/acmesh-official/acme.sh/wiki/deploy-to-docker-containers
+
+acme.sh --register-account -m szerr@sina.cn 
+# 把需要申请证书的域名写到下边，可以写多个域，子域名要挨个写出来，不能用通配符。搞完后去掉 nginx/conf.d 那边的 https 注释
+~/.acme.sh/acme.sh $* --issue --webroot /var/www \
+-d drops.icu \
+-d www.drops.icu \
+-d szerr.info \
+-d www.szerr.info
+acme.sh --deploy -d drops.icu  --deploy-hook docker
