@@ -25,19 +25,22 @@ import shutil
 testProjectName = 'te'
 
 binLi = [
-    'drops host add ssh.example.com 22 -k ~/.ssh/id_ed25519',
-    'drops initDebianEnv',
-    'drops project name test',
+    # 'drops host add ssh.example.com 22 -k ~/.ssh/id_ed25519',
+    'drops host add drops.icu -k ~/.ssh/id_ed25519',
+    # 'drops initDebianEnv',
+    'drops project name drops',
     'drops deploy',
-    'curl http://ssh.example.com',
+    # 'curl http://ssh.example.com',
+    'curl http://drops.icu',
     'drops nginxReload',
     'drops nginxForceReload',
-    'drops stop -s nginx',
-    'drops start -s nginx',
-    'drops kill -s nginx',
-    'drops rm -s nginx -f',
+    'drops deployHttpsKey',
+    'drops stop nginx',
+    'drops start nginx',
+    'drops kill nginx',
+    'drops rm nginx -f',
     'drops up',
-    'drops restart -s nginx',
+    'drops restart nginx',
     'drops stop',
     'drops rm -f',
     'drops undeploy -f',
@@ -66,8 +69,8 @@ def main():
         print('============', b, '============')
         testBin(b)
 
-    if os.path.isdir(testProjectName):
-        shutil.rmtree(testProjectName)
+    # if os.path.isdir(testProjectName):
+        # shutil.rmtree(testProjectName)
 
 
 if __name__ == '__main__':
