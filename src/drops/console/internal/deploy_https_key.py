@@ -15,19 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
-
 from . import internal
+from . import er
 
 
-def add_deploy_cmd(s):
+def add_deploy_https_key_cmd(s):
     p = s.add_parser(
-        'deploy', help='部署并启动服务。')
+        'deployHttpsKey', help='申请并部署 https 证书。')
     internal.add_arg_group_host(p)
-    internal.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
+    p.add_argument("-f", '--force',
+                   help="重新申请证书。", default=False, action='store_true')
+    p.set_defaults(func=deploy_https_key_cmd)
 
 
-def deploy_cmd(p):
+def deploy_https_key_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    internal.rsync(hosts, p.force)
-    return internal.docker_compose_cmd("up -d", hosts)
+    b = 'exec -T acme.sh redeploy-ssl'
+    if p.force:
+        b += ' --force'
+    # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
+    internal.docker_compose_cmd('restart acme.sh', hosts)
+    print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
+    return internal.docker_compose_cmd(b, hosts)

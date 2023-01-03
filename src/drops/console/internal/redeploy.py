@@ -28,5 +28,5 @@ def add_redeploy_cmd(s):
 
 def redeploy_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    internal.rsync_cmd(hosts, p.force)
+    internal.rsync(hosts, p.force)
     return internal.docker_compose_cmd("up -d --build --remove-orphans", hosts)

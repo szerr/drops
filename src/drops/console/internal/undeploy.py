@@ -28,12 +28,12 @@ def add_undeploy_cmd(s):
 
 
 def undeploy_cmd(p):
-    if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及其相关配置，但不会完全删除映射文件。是否继续？'):
+    if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
     hosts = internal.get_arg_group_host_from_conf(p)
     print('---------- kill ----------')
     internal.docker_compose_cmd('kill', hosts)
     print('--------- rm -f ---------')
     internal.docker_compose_cmd('rm -f', hosts)
-    print('-------- rm -rf %s --------' % internal.work_dir())
-    internal.exec('rm -rf %s' % internal.work_dir(), hosts)
+    print('-------- rm -rf %s --------' % internal.container_path())
+    internal.exec('rm -rf %s' % internal.container_path(), hosts)

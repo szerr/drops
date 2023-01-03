@@ -49,7 +49,7 @@ def host_cmd(a):
 
 def add_host_cmd(s):
     p = s.add_parser(
-        'host', help='Manage drops hosts. password and key must write one.')
+        'host', help='管理 drops 部署主机。因为密码是明文存储的，强烈建议用 key 做验证。')
     p.add_argument("-g", '--group',
                    help="Add to host group (default to test host group).", type=str, default='test')
     p.add_argument('cmd', type=str, choices=[

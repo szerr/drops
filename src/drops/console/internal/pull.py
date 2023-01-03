@@ -19,15 +19,17 @@
 from . import internal
 
 
-def add_deploy_cmd(s):
+def add_pull_cmd(s):
     p = s.add_parser(
-        'deploy', help='部署并启动服务。')
+        'pull', help='拉取容器。')
     internal.add_arg_group_host(p)
-    internal.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
+    internal.add_arg_container(p)
+    p.set_defaults(func=pull_cmd)
 
 
-def deploy_cmd(p):
+def pull_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    internal.rsync(hosts, p.force)
-    return internal.docker_compose_cmd("up -d", hosts)
+    b = 'pull'
+    if p.container:
+        b += ' ' + ' '.join(p.container)
+    return internal.docker_compose_cmd(b, hosts)

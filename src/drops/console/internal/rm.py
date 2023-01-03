@@ -23,7 +23,7 @@ def add_rm_cmd(s):
     p = s.add_parser(
         'rm', help='删除容器。')
     internal.add_arg_group_host(p)
-    internal.add_arg_service(p)
+    internal.add_arg_container(p)
     internal.add_arg_force(p)
     p.set_defaults(func=rm_cmd)
 
@@ -31,10 +31,10 @@ def add_rm_cmd(s):
 def rm_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
     b = 'rm -f'
-    if p.service:
-        if not p.force and not internal.user_confirm('确认删除 ', p.service, '？'):
+    if p.container:
+        if not p.force and not internal.user_confirm('确认删除 ', p.container, '？'):
             raise er.UserCancel
-        b += ' ' + p.service
+        b += ' ' + ' '.join(p.container)
     if not p.force and not internal.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
     return internal.docker_compose_cmd(b, hosts)

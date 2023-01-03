@@ -21,12 +21,14 @@ from . import internal
 
 def add_sync_cmd(s):
     p = s.add_parser(
-        'sync', help='使用 rsync 当前项目（本文件的上一级目录）到远程服务器')
+        'sync', help='rsync 当前项目到远程服务器')
     internal.add_arg_group_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
+    p.add_argument('obj', type=str, choices=[
+        'ops', 'volumes', 'all'], nargs='?', help="同步的对象。volumes 特指 volumes 目录，ops 是除 volumes 外其他所有，all 同步所有。default all。")
 
 
 def sync_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.rsync_cmd(hosts, p.force)
+    return internal.rsync(hosts, p.force)

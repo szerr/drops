@@ -19,15 +19,13 @@
 from . import internal
 
 
-def add_deploy_cmd(s):
+def add_echo_paths_cmd(s):
     p = s.add_parser(
-        'deploy', help='部署并启动服务。')
-    internal.add_arg_group_host(p)
-    internal.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
+        'echoPaths', help='显示 drops 用到的各部署路径')
+    p.set_defaults(func=deploy_echo_paths_cmd)
 
 
-def deploy_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
-    internal.rsync(hosts, p.force)
-    return internal.docker_compose_cmd("up -d", hosts)
+def deploy_echo_paths_cmd(p):
+    print('容器路径，docker-compose.yaml 所在文件夹:', internal.container_path())
+    print('发布路径，应用程序文件夹:', internal.release_path())
+    print('volumes 路径，应用程序数据文件夹:', internal.volumes_path())

@@ -22,13 +22,13 @@ def add_up_cmd(s):
     p = s.add_parser(
         'up', help='创建和启动容器。')
     internal.add_arg_group_host(p)
-    internal.add_arg_service(p)
+    internal.add_arg_container(p)
     p.set_defaults(func=up_cmd)
 
 
 def up_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
     b = 'up -d '
-    if p.service:
-        b += ' ' + p.service
+    if p.container:
+        b += ' ' + ' '.join(p.container)
     return internal.docker_compose_cmd(b, hosts)

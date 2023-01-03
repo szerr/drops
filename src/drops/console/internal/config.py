@@ -77,7 +77,7 @@ class Conf():
 
     def getProjectName(self):
         self.open()
-        # 0.1.6 之前项目名用的文件夹名，做个兼容。
+        # TODO 0.1.6 之前项目名用的文件夹名，做个兼容。
         if 'project' not in self.C:
             n = os.path.split(os.getcwd())[-1]
             self.setProjectName(n)

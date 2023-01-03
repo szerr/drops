@@ -22,13 +22,13 @@ def add_start_cmd(s):
     p = s.add_parser(
         'start', help='启动容器。')
     internal.add_arg_group_host(p)
-    internal.add_arg_service(p)
+    internal.add_arg_container(p)
     p.set_defaults(func=start_cmd)
 
 
 def start_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
     b = 'start'
-    if p.service:
-        b += ' ' + p.service
+    if p.container:
+        b += ' ' + ' '.join(p.container)
     return internal.docker_compose_cmd(b, hosts)

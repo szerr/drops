@@ -36,7 +36,9 @@ from .up import *
 from .start import *
 from .restart import *
 from .project import *
-
+from .echo_paths import *
+from .pull import *
+from .deploy_https_key import *
 
 def initCmd(s):
     add_clean_up_cmd(s)
@@ -59,3 +61,6 @@ def initCmd(s):
     add_start_cmd(s)
     add_restart_cmd(s)
     add_project_cmd(s)
+    add_echo_paths_cmd(s)
+    add_pull_cmd(s)
+    add_deploy_https_key_cmd(s)
