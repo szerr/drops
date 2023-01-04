@@ -22,25 +22,29 @@ import shutil
 import drops
 
 
+def add_new_cmd(s):
+    p = s.add_parser(
+        'new', help='Create a drops project.')
+    p.add_argument("dirName",  type=str, help="目录名，如果没有项目名会作为默认项目名。")
+    p.add_argument("projectName",  type=str,
+                   help="项目名。", default='', nargs='?')
+    p.set_defaults(func=new_cmd)
+
+
 def new_cmd(arg):
     from . import config
     from . import internal
 
-    if arg.name in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.name))
+    if arg.dirName in os.listdir(os.getcwd()):
+        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dirName))
         return
     objPath = drops.__path__[0]
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), arg.name))
-    os.chdir(arg.name)
+                    os.path.join(os.getcwd(), arg.dirName))
+    os.chdir(arg.dirName)
     c = config.Conf().open()
-    c.setProjectName(arg.name)
+    if arg.projectName:
+        c.setProjectName(arg.projectName)
+    else:
+        c.setProjectName(arg.dirName)
     c.save()
-
-
-def add_new_cmd(s):
-    p = s.add_parser(
-        'new', help='Create a drops project.')
-    p.add_argument("name", metavar="name",
-                   type=str, help="项目名。")
-    p.set_defaults(func=new_cmd)

@@ -92,7 +92,7 @@ def Fatal(*e):
 def add_ssh_arg(p):
     p.add_argument('-h', type=str, help='host', required=False)
     p.add_argument('-p', '--port', dest='port', type=int,
-                   help="ssh port", default=0)
+                   help="ssh port", default=22)
 
 
 def add_container_arg(p):
