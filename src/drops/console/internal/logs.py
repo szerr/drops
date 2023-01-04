@@ -21,12 +21,18 @@ from . import internal
 
 def add_logs_cmd(s):
     p = s.add_parser(
-        'logs', help='Create a drops project.')
+        'logs', help='输出容器日志。')
     p.add_argument("container", metavar="container",
                    type=str, help="容器名")
+    p.add_argument("-f", '--follow',
+                   help="持续日志输出。", default=False, action='store_true')
+    internal.add_arg_group_host(p)
     p.set_defaults(func=logs_cmd)
 
 
-def logs_cmd(arg):
+def logs_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.docker_compose_cmd("logs "+arg.container, hosts)
+    b = 'logs '
+    if p.follow:
+        b += '-f '
+    return internal.docker_compose_cmd(b+p.container, hosts)
