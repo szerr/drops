@@ -55,6 +55,16 @@ def docker_cmd_template(cmd):
     return 'cd ' + container_path() + ' && docker-compose %s' % cmd
 
 
+def ssh_template_key(key_path, port, username, host, b=''):
+    # ssh 登录运行命令
+    return 'ssh -p %d -i %s %s@%s "cd %s && %s"' % (port, key_path, username, host, container_path(), b)
+
+
+def ssh_template_pwd(password, port, username, host, b=''):
+    # ssh 登录运行命令
+    return 'sshpass -p %s ssh -p %d %s@%s "cd %s && %s"' % (password, port, username, host, container_path(), b)
+
+
 def rsync_servers_template_key(key_path, port, username, host):
     # rsync 同步 servers 文件的命令模板 key 登录
     return ('rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" servers/ %s@%s:'+servers_path()) % (port, key_path, username, host)
@@ -100,11 +110,6 @@ def add_container_arg(p):
                    help="docker container name", nargs=1)
 
 
-def add_cmd_arg(p):
-    p.add_argument('cmd', type=str,
-                   help="docker-compose <cmd>", nargs='+', default='')
-
-
 def add_arg_container(p):
     p.add_argument('container',
                    help="要执行操作的容器。", type=str, nargs='*')
@@ -147,13 +152,15 @@ def gen_ssh_cmd():
     return ssh_cmd_template % (per.destination[0], port)
 
 
-def detection_cmd(b):
+def detection_cmd(*bl):
     # 确认命令是否存在
-    for p in os.environ['PATH'].split(':'):
-        if os.path.isdir(p) and b in os.listdir(p):
-            return True
-    else:
-        return False
+    for b in bl:
+        for p in os.environ['PATH'].split(':'):
+            if os.path.isdir(p) and b in os.listdir(p):
+                break
+        else:
+            raise er.CmdNotExist(b)
+    return True
 
 
 def rsync(hosts, force=False):
@@ -162,9 +169,24 @@ def rsync(hosts, force=False):
     rsync_servers(hosts, force)
 
 
+def ssh_shell(hosts, b):
+    detection_cmd('ssh')
+    for host in hosts.values():
+        c = ssh.Client(**host.to_conf())
+        _, status = c.exec(' mkdir -p ' + release_path())
+        if status != 0:
+            raise er.CmdExecutionError('mkdir -p ' + release_path())
+        if host.key:
+            os.system(ssh_template_key(
+                host.key, host.port, host.username, host.host, b))
+        else:
+            detection_cmd('sshpass')
+            os.system(ssh_template_pwd(
+                host.password, host.port, host.username, host.host, b))
+
+
 def rsync_release(hosts, force):
-    if not detection_cmd('rsync'):
-        raise er.RsyncNotExist
+    detection_cmd('rsync')
     for host in hosts.values():
         c = ssh.Client(**host.to_conf())
         _, status = c.exec(' mkdir -p ' + release_path())
@@ -177,14 +199,14 @@ def rsync_release(hosts, force):
             os.system(rsync_release_template_key(
                 host.key, host.port, host.username, host.host))
         else:
+            detection_cmd('sshpass')
             os.system(rsync_release_template_pwd(
                 host.password, host.port, host.username, host.host))
 
 
 def rsync_docker(hosts, force=False):
     # 同步项目到远程目录
-    if not detection_cmd('rsync'):
-        raise er.RsyncNotExist
+    detection_cmd('rsync')
     for host in hosts.values():
         if not force and not confirm_drops_project(host):
             if not user_confirm("主机 %s 远程目录可能不是 drops 项目，是否继续同步？" % host.host):
@@ -197,13 +219,13 @@ def rsync_docker(hosts, force=False):
             os.system(rsync_docker_template_key(
                 host.key, host.port, host.username, host.host))
         else:
+            detection_cmd('sshpass')
             os.system(rsync_docker_template_pwd(
                 host.password, host.port, host.username, host.host))
 
 
 def rsync_servers(hosts, force):
-    if not detection_cmd('rsync'):
-        raise er.RsyncNotExist
+    detection_cmd('rsync')
     for host in hosts.values():
         c = ssh.Client(**host.to_conf())
         _, status = c.exec(' mkdir -p ' + release_path())
@@ -213,6 +235,7 @@ def rsync_servers(hosts, force):
             os.system(rsync_servers_template_key(
                 host.key, host.port, host.username, host.host))
         else:
+            detection_cmd('sshpass')
             os.system(rsync_servers_template_pwd(
                 host.password, host.port, host.username, host.host))
 

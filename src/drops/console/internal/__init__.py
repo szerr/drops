@@ -40,6 +40,7 @@ from .echo_paths import *
 from .pull import *
 from .deploy_https_key import *
 from .logs import *
+from .exec import *
 
 
 def initCmd(s):
@@ -67,3 +68,4 @@ def initCmd(s):
     add_pull_cmd(s)
     add_deploy_https_key_cmd(s)
     add_logs_cmd(s)
+    add_exec_cmd(s)
