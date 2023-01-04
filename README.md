@@ -127,7 +127,7 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 | drops 命令         | 功能                                                         |
 | ------------------ | ------------------------------------------------------------ |
-| `new`              | 创建一个`drops`项目。                                        |
+| `new`   | 创建一个`drops`项目。                                        |
 | `init`             | 在当前目录初始化一个 `drops` 项目。                          |
 | `host`             | 管理服务器连结配置。                                         |
 | `deploy`           | 同步后启动容器。                                             |
@@ -140,12 +140,14 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 | `stop`             | 停止容器。                                                   |
 | `kill`             | 杀掉容器。                                                   |
 | `rm`               | 删除容器。                                                   |
+| `logs` | 输出容器日志。-f 持续输出。 |
 | `nginxReload`      | 对容器`nginx`执行`nginx -s reload`。                         |
 | `nginxForceReload` | 更新`nginx`证书时，用这个脚本执行 `reload`。                 |
+| `deployHttpsKey` | 申请并部署 https 证书。 |
 | `initDebianEnv`    | 初始化远程服务器环境`Debian`系用。                           |
 | `undeploy`         | 清理掉服务器上的项目和容器。                                 |
 | `clean`            | 删除当前项目下 `drops` 相关的文件。                          |
-| `drops project name` | 输出或更改项目名，也就是部署到`/usr/local/drops/`下的文件夹名  |
+| `drops project name` | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`。 |
 
 `--help` 查看更多帮助。
 `start`、`up`、`restart`、`stop`、`kill`、`rm` 默认对所有容器操作，可以用 -s 指定一个容器。
