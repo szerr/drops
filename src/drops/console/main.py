@@ -23,11 +23,12 @@ import sys
 desc = '''drops 是基于 ssh 和 docker-compose 的运维模板，附带的 drops 命令可以方便的管理项目，部署服务。'''
 
 # 是否打印异常跟踪
-DEBUG = False
 
 
 def main():
     parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--debug',
+                        help="启动 debug 模式。", default=False, action='store_true')
     # metavar 设置空字符串，为了不以  {cmd1, cmd2, ..} 的形式显示可用子命令，怪怪的。
     subparsers = parser.add_subparsers(metavar="")
 
@@ -36,7 +37,7 @@ def main():
     arg = parser.parse_args()
     # 调用相关命令，没有命令时打印 help
     if 'func' in arg:
-        if not DEBUG:
+        if not arg.debug:
             try:
                 arg.func(arg)
             except Exception as e:
