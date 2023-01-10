@@ -49,6 +49,10 @@ def release_path():
     return '/srv/drops/%s/release/' % config.Conf().getProjectName()
 
 
+def var_path():
+    return '/srv/drops/%s/var/' % config.Conf().getProjectName()
+
+
 def docker_cmd_template(cmd):
     # 执行 docker-compose 命令的模板，看起来像是这样：
     #  cd <container_path> && docker-compose %s"
@@ -65,34 +69,62 @@ def ssh_template_pwd(password, port, username, host, b=''):
     return 'sshpass -p %s ssh -p %d %s@%s "cd %s && %s"' % (password, port, username, host, container_path(), b)
 
 
+def rsync_template_key(sync_path, remote_path, key_path, port, username, host):
+    # rsync 同步 release 文件的命令模板 key登录
+    return ('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {sync_path} {username}@{host}:'+remote_path).format(
+        sync_path=sync_path, key_path=key_path, port=port, username=username, host=host)
+
+
+def rsync_template_pwd(sync_path, remote_path, password, port, username, host):
+    # rsync 同步 release 文件的命令模板 pwd登录
+    return ('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {sync_path} {username}@{host}:'+remote_path).format(
+        sync_path=sync_path, password=password, port=port, username=username, host=host)
+
+
 def rsync_servers_template_key(key_path, port, username, host):
     # rsync 同步 servers 文件的命令模板 key 登录
-    return ('rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" servers/ %s@%s:'+servers_path()) % (port, key_path, username, host)
+    return rsync_template_key('servers/', servers_path(), key_path, port, username, host)
 
 
 def rsync_servers_template_pwd(password, port, username, host):
     # rsync 同步 servers 文件的命令模板 密码登录
-    return ('sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" servers/ %s@%s:'+servers_path()) % (password, port, username, host)
+    return rsync_template_pwd('servers/', servers_path(), password, port, username, host)
 
 
 def rsync_docker_template_key(key_path, port, username, host):
     # rsync 同步 docker-compose.yaml 文件的命令模板 key 登录
-    return ('rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" docker-compose.yaml %s@%s:'+docker_path()) % (port, key_path, username, host)
+    return rsync_template_key('docker-compose.yaml', docker_path(), key_path, port, username, host)
 
 
 def rsync_docker_template_pwd(password, port, username, host):
     # rsync 同步 docker-compose.yaml 文件的命令模板 密码登录
-    return ('sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" docker-compose.yaml %s@%s:'+docker_path()) % (password, port, username, host)
+    return rsync_template_pwd('docker-compose.yaml', docker_path(), password, port, username, host)
 
 
 def rsync_release_template_key(key_path, port, username, host):
     # rsync 同步 release 文件的命令模板 key登录
-    return ('rsync -avzP --del -e "ssh -p %d -i %s" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" release/ %s@%s:'+release_path()) % (port, key_path, username, host)
+    return rsync_template_key('release/', release_path(), key_path, port, username, host)
 
 
 def rsync_release_template_pwd(password, port, username, host):
     # rsync 同步 release 文件的命令模板 pwd登录
-    return ('sshpass -p %s rsync -avzP --del -e "ssh -p %d" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" release/ %s@%s:'+release_path()) % (password, port, username, host)
+    return rsync_template_pwd('release/', release_path(), password, port, username, host)
+
+
+def rsync_var_template_key(key_path, port, username, host):
+    return rsync_template_key('var/', var_path(), key_path, port, username, host)
+
+
+def rsync_var_template_pwd(password, port, username, host):
+    return rsync_template_pwd('var/',  var_path(), password, port, username, host)
+
+
+def rsync_volumes_template_key(key_path, port, username, host):
+    return rsync_template_key('volumes/', volumes_path(), key_path, port, username, host)
+
+
+def rsync_volumes_template_pwd(password, port, username, host):
+    return rsync_template_pwd('volumes/', volumes_path(), password, port, username, host)
 
 
 def Fatal(*e):
@@ -163,15 +195,6 @@ def detection_cmd(*bl):
     return True
 
 
-def rsync(hosts, force=False):
-    print('------- sync docker-compose.yaml -------')
-    rsync_docker(hosts, force)
-    print('------- sync release -------')
-    rsync_release(hosts, force)
-    print('------- sync servers -------')
-    rsync_servers(hosts, force)
-
-
 def ssh_shell(hosts, b):
     detection_cmd('ssh')
     for host in hosts.values():
@@ -189,6 +212,7 @@ def ssh_shell(hosts, b):
 
 
 def rsync_release(hosts, force):
+    print('------- sync release -------')
     detection_cmd('rsync')
     for host in hosts.values():
         c = ssh.Client(**host.to_conf())
@@ -209,6 +233,7 @@ def rsync_release(hosts, force):
 
 def rsync_docker(hosts, force=False):
     # 同步项目到远程目录
+    print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
     for host in hosts.values():
         if not force and not confirm_drops_project(host):
@@ -228,12 +253,13 @@ def rsync_docker(hosts, force=False):
 
 
 def rsync_servers(hosts, force):
+    print('------- sync servers -------')
     detection_cmd('rsync')
     for host in hosts.values():
         c = ssh.Client(**host.to_conf())
-        _, status = c.exec(' mkdir -p ' + release_path())
+        _, status = c.exec(' mkdir -p ' + servers_path())
         if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + release_path())
+            raise er.CmdExecutionError('mkdir -p ' + servers_path())
         if host.key:
             os.system(rsync_servers_template_key(
                 host.key, host.port, host.username, host.host))
@@ -241,6 +267,62 @@ def rsync_servers(hosts, force):
             detection_cmd('sshpass')
             os.system(rsync_servers_template_pwd(
                 host.password, host.port, host.username, host.host))
+
+
+def rsync_var(hosts, force):
+    for host in hosts.values():
+        if not confirm_empty_dir(host, var_path()):
+            if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, var_path())):
+                raise er.UserCancel
+        c = ssh.Client(**host.to_conf())
+        _, status = c.exec(' mkdir -p ' + var_path())
+        if status != 0:
+            raise er.CmdExecutionError('mkdir -p ' + var_path())
+        if host.key:
+            os.system(rsync_var_template_key(
+                host.key, host.port, host.username, host.host))
+        else:
+            detection_cmd('sshpass')
+            os.system(rsync_var_template_pwd(
+                host.password, host.port, host.username, host.host))
+
+
+def rsync_volumes(hosts, force):
+    for host in hosts.values():
+        if not confirm_empty_dir(host, volumes_path()):
+            if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, volumes_path())):
+                raise er.UserCancel
+        c = ssh.Client(**host.to_conf())
+        _, status = c.exec(' mkdir -p ' + volumes_path())
+        if status != 0:
+            raise er.CmdExecutionError('mkdir -p ' + volumes_path())
+        if host.key:
+            os.system(rsync_volumes_template_key(
+                host.key, host.port, host.username, host.host))
+        else:
+            detection_cmd('sshpass')
+            os.system(rsync_volumes_template_pwd(
+                host.password, host.port, host.username, host.host))
+
+
+def rsync(hosts, force=False, obj='all'):
+    arg = (hosts, force)
+    if obj == 'all':
+        rsync_docker(*arg)
+        rsync_release(*arg)
+        rsync_servers(*arg)
+    elif obj == 'docker':
+        rsync_docker(*arg)
+    elif obj == 'release':
+        rsync_release(*arg)
+    elif obj == 'servers':
+        rsync_servers(*arg)
+    elif obj == 'var':
+        rsync_var(*arg)
+    elif obj == 'volumes':
+        rsync_volumes(*arg)
+    else:
+        raise er.UnsupportedSyncObject(obj)
 
 
 def docker_compose_cmd(cmd, hosts):
@@ -309,6 +391,22 @@ def confirm_drops_project(host):
         if s != -1:
             break
     # 目录存在，却没有 docker-compose 或 servers，可能不是 drops 项目
+    if s == 0:
+        return True
+    return False
+
+
+def confirm_empty_dir(host, path):
+    # 返回 path 是否是空目录
+    c = ssh.Client(**host.to_conf())
+
+    # 空目录返回 0， 否则返回 1
+    while True:
+        _, s = c.exec(
+            '''if [ "$(ls -A %s)" ]; then exit 1; else exit 0 fi''' % path, False)
+        if s != -1:
+            break
+
     if s == 0:
         return True
     return False

@@ -62,6 +62,11 @@ class ArgsError(DropsErr):
         return 'Args error: %s.' % (' '.join(self.args))
 
 
+class UnsupportedSyncObject(DropsErr):
+    def __str__(self) -> str:
+        return 'Unsupported sync object: %s.' % (' '.join(self.args))
+
+
 class CmdNotExist(DropsErr):
     def __str__(self) -> str:
         return '[%s] command does not exist, please install it manually.' % (', '.join(self.args))

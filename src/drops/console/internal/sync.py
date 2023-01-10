@@ -26,9 +26,12 @@ def add_sync_cmd(s):
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, choices=[
-        'ops', 'volumes', 'all'], nargs='?', help="同步的对象。volumes 特指 volumes 目录，ops 是除 volumes 外其他所有，all 同步所有。default all。")
+        'docker',  'release', 'servers', 'var', 'volumes', 'all'], nargs='?',
+        help='''同步的对象。docker: docker-compose，all 是除 var 和 volumes 的所有。默认：all
+var, volumes 建议只用来同步初始数据。
+同步 var, volumes 会检查远程目录是否为空文件夹，并做相应提示。''')
 
 
 def sync_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.rsync(hosts, p.force)
+    return internal.rsync(hosts, p.force, p.obj)
