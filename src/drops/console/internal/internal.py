@@ -164,8 +164,11 @@ def detection_cmd(*bl):
 
 
 def rsync(hosts, force=False):
+    print('------- sync docker-compose.yaml -------')
     rsync_docker(hosts, force)
+    print('------- sync release -------')
     rsync_release(hosts, force)
+    print('------- sync servers -------')
     rsync_servers(hosts, force)
 
 

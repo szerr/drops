@@ -78,11 +78,12 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 应用程序发布的包，静态文件，在`release`下创建相应的文件夹，在`docker-compose.yaml` 用相对路径（`./release/`）映射到容器内。如果 drops 创建为单独的项目，请考虑将`release`纳入版本控制。
 
-容器生成的文件，放到`volumes`对应的文件夹。在 `docker-compose.yaml` 用相对路径（`./volumes/`）映射到容器里。这样本地测试会很方便。
+应用数据，容器生成的文件，放到`volumes`对应的文件夹。在 `docker-compose.yaml` 用相对路径（`./volumes/`）映射到容器里。这样本地测试会很方便。
+经常变化的文件，如 log、lock、sock 文件等，放到 `var` 中。按`文件类型/服务名`分类存放。不要做版本控制，不建议做备份。
 
 编辑`docker-compose.yaml`，定义你需要的服务。
 
-***注意！不要将程序生成的文件放到 servers、releace，同步时文件会被删除。***
+**注意！不要将应用数据，容器生成的文件放到 servers、releace，同步时文件会被删除。**
 
 参照 `servers/crond/periodic_example/backup.sh` 快速搭建异地增量备份。
 

@@ -9,7 +9,7 @@ services:
       # acme.sh 的证书验证路径
       - ./volumes/nginx/well-known:/var/www/.well-known:ro
       # nginx 日志
-      - ./volumes/nginx/log:/var/log/nginx
+      - ./var/log/nginx:/var/log/nginx
       # nginx 相关配置
       - ./servers/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
