@@ -21,12 +21,12 @@ from . import internal
 
 def add_exec_cmd(s):
     p = s.add_parser(
-        'exec', help='输出容器日志。')
+        'exec', help='在任意容器中执行命令。')
     p.add_argument("container", metavar="container",
                    type=str, help="容器名")
     internal.add_arg_group_host(p)
-    p.add_argument('cmd',
-                   help="要执行的命令。", type=str)
+    p.add_argument('cmds',
+                   help="要执行的命令。", type=str, nargs='+')
     p.set_defaults(func=exec_cmd)
 
 
@@ -35,4 +35,4 @@ def exec_cmd(p):
     # b = 'docker-compose exec -T '
     # return internal.exec(hosts, b+p.container + ' ' + p.cmd)
     internal.exec(internal.docker_cmd_template(
-        "exec -T "+p.container + ' ' + p.cmd), hosts)
+        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), hosts)
