@@ -17,6 +17,7 @@ services:
       # 项目文件映射
       - ./release/html:/var/www/html:ro
     labels:
+      # acme.sh 部署证书要用的标签
       - sh.acme.autoload.domain=drops
     ports:
       - 80:80
@@ -40,6 +41,8 @@ services:
       #     - DEPLOY_DOCKER_CONTAINER_CA_FILE="/etc/nginx/ssl/drops/ca.pem"
       #     - DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE="/etc/nginx/ssl/drops/full.pem"
       #     - DEPLOY_DOCKER_CONTAINER_RELOAD_CMD="nginx -g 'daemon on; master_process on;' -s reload" # service nginx force-reload 不会报错
+      #   depends_on:
+      #     - nginx
       # crond:
       #   # 定时任务的示例
       #   # 注意，如果需要 crontabs 实时生效，crontabs 下的文件所属用户必须是root，不然不会生效也不会报错。
