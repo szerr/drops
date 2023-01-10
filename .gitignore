@@ -8,3 +8,4 @@ upload.sh
 install.sh
 build.sh
 te
+release.sh
