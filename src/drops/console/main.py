@@ -41,7 +41,7 @@ def main():
             try:
                 arg.func(arg)
             except Exception as e:
-                print("Fatal:", e)
+                print('Fatal:', type(e).__name__, ':', e)
                 sys.exit(1)
         else:
             arg.func(arg)
