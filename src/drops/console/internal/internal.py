@@ -17,9 +17,9 @@
 
 
 import os
+import time
 
 from . import er
-from . import globals
 from . import ssh
 from . import config
 
@@ -72,25 +72,23 @@ def ssh_template_pwd(password, port, username, host, b=''):
 def rsync2remotely(host, src, target):
     # rsync 本地同步到远程路径
     if host.key:
-        if host.key:
-            os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
-                src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
-        else:
-            detection_cmd('sshpass')
-            os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
-                src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
+        os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
+    else:
+        detection_cmd('sshpass')
+        os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
 
 
 def rsync2local(host, src, target):
     # rsync 远程同步到本地
     if host.key:
-        if host.key:
-            os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
-                src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
-        else:
-            detection_cmd('sshpass')
-            os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
-                src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
+        os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
+            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
+    else:
+        detection_cmd('sshpass')
+        os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
+            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
 
 
 def Fatal(*e):
