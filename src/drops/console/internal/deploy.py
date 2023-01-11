@@ -29,5 +29,5 @@ def add_deploy_cmd(s):
 
 def deploy_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    internal.rsync(hosts, p.force)
+    internal.sync(hosts, p.force)
     return internal.docker_compose_cmd("up -d", hosts)

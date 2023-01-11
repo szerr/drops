@@ -21,17 +21,17 @@ from . import internal
 
 def add_sync_cmd(s):
     p = s.add_parser(
-        'sync', help='rsync 当前项目到远程服务器')
+        'sync', help='同步当前项目到远程路径')
     internal.add_arg_group_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
-    p.add_argument('obj', type=str, choices=[
-        'docker',  'release', 'servers', 'var', 'volumes', 'all'], nargs='?',
-        help='''同步的对象。docker: docker-compose，all 是除 var 和 volumes 的所有。默认：all
+    p.add_argument('obj', type=str, default='ops', choices=[
+        'docker',  'release', 'servers', 'var', 'volumes', 'ops'], nargs='?',
+        help='''同步的对象。docker: docker-compose，ops 是除 var 和 volumes 的所有。默认：ops。
 var, volumes 建议只用来同步初始数据。
 同步 var, volumes 会检查远程目录是否为空文件夹，并做相应提示。''')
 
 
 def sync_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.rsync(hosts, p.force, p.obj)
+    return internal.sync(hosts, p.force, p.obj)
