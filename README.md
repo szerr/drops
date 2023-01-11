@@ -134,6 +134,7 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 | `deploy`           | 同步后启动容器。                                             |
 | `redeploy`         | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
 | `sync`             | 同步项目到服务器。                                           |
+| `backup` | 备份远程目录到本地。如 `drops backup -f %Y-%m-%d_%H:%M:%S` |
 | `ps`               | 查看当前运行的容器。                                         |
 | `start`            | 启动容器。                                                   |
 | `up`               | 创建和启动容器。                                             |
@@ -142,7 +143,7 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 | `kill`             | 杀掉容器。                                                   |
 | `rm`               | 删除容器。                                                   |
 | `logs` | 输出容器日志。-f 持续输出。 |
-| `exec container cmd` | 执行容器中的命令，因为没有`TTY`，只能执行非交互式命令。 |
+| `exec container cmd` | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。 |
 | `nginxReload`      | 重载`nginx`配置，但不会更新证书。   |
 | `nginxForceReload` | 重载`nginx`配置，会更新证书。 |
 | `deployHttpsKey` | 申请并部署 `https` 证书。 |
@@ -164,3 +165,10 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 `servers/nginx/nginx.conf` 可以选择开启的配置
 
 `servers/crond/periodic_example/backup.sh` 是一个异地备份脚本。
+
+
+
+## 注意事项
+
+为了实现备份，同步，部署相关功能，执行的 `rsync` 命令 会带有 `--del` 参数，会删除不匹配的文件，保持文件夹内文件相同，**删除前不一定有提示**。我会在可能有风险的地方加提示，也会做相应测试。也请各位在使用时多加小心并承担相应风险。用测试确定流程，保障逻辑准确；用冗余，备份和快照防止数据丢失。
+

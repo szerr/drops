@@ -25,25 +25,27 @@ import shutil
 testProjectName = 'te'
 
 binLi = [
-    # 'drops host add ssh.example.com 22 -k ~/.ssh/id_ed25519',
-    'drops host add drops.icu -k ~/.ssh/id_ed25519',
-    # 'drops initDebianEnv',
-    'drops project name drops',
-    'drops deploy',
-    # 'curl http://ssh.example.com',
-    'curl http://drops.icu',
-    'drops nginxReload',
-    'drops nginxForceReload',
-    'drops deployHttpsKey',
-    'drops stop nginx',
-    'drops start nginx',
-    'drops kill nginx',
-    'drops rm nginx -f',
-    'drops up',
-    'drops restart nginx',
-    'drops stop',
-    'drops rm -f',
-    'drops undeploy -f',
+    'drops --debug host add example.com 3003 -k ~/.ssh/id_ed25519',
+    'drops --debug initDebianEnv',
+    'drops --debug project name drops',
+    'drops --debug sync',
+    'drops --debug sync volumes',
+    'drops --debug sync var',
+    'drops --debug deploy',
+    'curl http://example.com',
+    'drops --debug nginxReload',
+    'drops --debug nginxForceReload',
+    # 'drops --debug deployHttpsKey',
+    'drops --debug stop nginx',
+    'drops --debug start nginx',
+    'drops --debug kill nginx',
+    'drops --debug rm nginx -f',
+    'drops --debug up',
+    'drops --debug restart nginx',
+    'drops --debug stop',
+    'drops --debug rm -f',
+    'drops --debug backup all -f %Y-%m-%d_%H:%M:%S -k 1',
+    'drops --debug undeploy -f',
 ]
 
 
@@ -59,7 +61,6 @@ def testBin(b):
 
 
 def main():
-    pwd = os.getcwd()
     if os.path.isdir(testProjectName):
         shutil.rmtree(testProjectName)
 

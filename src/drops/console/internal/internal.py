@@ -18,12 +18,18 @@
 
 import os
 import time
+import shutil
 
 from . import er
 from . import ssh
 from . import config
 
 port = 22  # 默认端口
+
+
+def work_path():
+    # 当前 drops 项目绝对路径，drops.yaml 所在目录
+    return os.getcwd()
 
 
 def volumes_path():
@@ -37,20 +43,20 @@ def container_path():
 
 
 def servers_path():
-    return '/srv/drops/%s/servers/' % config.Conf().getProjectName()
+    return container_path() + '/servers/'
 
 
 def docker_path():
-    return container_path() + 'docker-compose.yaml'
+    return container_path() + '/docker-compose.yaml'
 
 
 def release_path():
     # 发布路径
-    return '/srv/drops/%s/release/' % config.Conf().getProjectName()
+    return container_path() + '/release/'
 
 
 def var_path():
-    return '/srv/drops/%s/var/' % config.Conf().getProjectName()
+    return container_path() + '/var/'
 
 
 def docker_cmd_template(cmd):
@@ -72,23 +78,38 @@ def ssh_template_pwd(password, port, username, host, b=''):
 def rsync2remotely(host, src, target):
     # rsync 本地同步到远程路径
     if host.key:
-        os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
-            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
     else:
         detection_cmd('sshpass')
-        os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
-            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host)
+    print(b)
+    os.system(b)
 
 
 def rsync2local(host, src, target):
     # rsync 远程同步到本地
     if host.key:
-        os.system('rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host))
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {username}@{host}:{src} {target}'.format(
+            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
     else:
         detection_cmd('sshpass')
-        os.system('sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host))
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
+            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host)
+    os.system(b)
+
+
+def rsync2local_link_dest(host, src, target, link_dest):
+    # rsync 远程同步到本地，设置链接
+    if host.key:
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
+            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+    else:
+        detection_cmd('sshpass')
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
+            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+    os.system(b)
 
 
 def Fatal(*e):
@@ -177,7 +198,7 @@ def rsync_release(hosts, force):
         # TODO 0.2.1 添加向下兼容
         if not os.path.isdir('release'):
             os.mkdir('release')
-        rsync2remotely(host, 'release/', release_path())
+        rsync2remotely(host, 'release', container_path())
 
 
 def rsync_docker(hosts, force=False):
@@ -203,7 +224,7 @@ def rsync_servers(hosts, force):
         _, status = c.exec(' mkdir -p ' + servers_path())
         if status != 0:
             raise er.CmdExecutionError('mkdir -p ' + servers_path())
-        rsync2remotely(host, 'servers/', servers_path())
+        rsync2remotely(host, 'servers', container_path())
 
 
 def rsync_var(hosts, force):
@@ -215,7 +236,7 @@ def rsync_var(hosts, force):
         _, status = c.exec(' mkdir -p ' + var_path())
         if status != 0:
             raise er.CmdExecutionError('mkdir -p ' + var_path())
-        rsync2remotely(host, 'var/', var_path())
+        rsync2remotely(host, 'var', container_path())
 
 
 def rsync_volumes(hosts, force):
@@ -227,7 +248,7 @@ def rsync_volumes(hosts, force):
         _, status = c.exec(' mkdir -p ' + volumes_path())
         if status != 0:
             raise er.CmdExecutionError('mkdir -p ' + volumes_path())
-        rsync2remotely(host, 'volumes/', volumes_path())
+        rsync2remotely(host, 'volumes', container_path())
 
 
 def sync(hosts, force=False, obj='ops'):
@@ -248,6 +269,98 @@ def sync(hosts, force=False, obj='ops'):
         rsync_volumes(*arg)
     else:
         raise er.UnsupportedSyncObject(obj)
+
+
+def rsync_backup(hosts, src, target, link_desc=''):
+    detection_cmd('rsync')
+    for host in hosts.values():
+        if link_desc:
+            rsync2local_link_dest(host, src, target, link_desc)
+        else:
+            rsync2local(host, src, target)
+
+
+def backup(hosts, obj, target, format='', link_desc='', keep=-1):
+    backup2dir = target
+    link_dir = link_desc
+    # 如果设定了时间格式
+    if format:
+        # 备份目录是备份对象下的时间目录
+        backup2dir = os.path.join(target, '{obj}')
+        # 如果设置了 link_desc
+    # 需要备份的目录列表
+    srcLi = []
+    if obj == 'all':
+        srcLi = [
+            [release_path(), backup2dir.format(obj='release')],
+            [servers_path(), backup2dir.format(obj='servers')],
+            [var_path(), backup2dir.format(obj='var')],
+            [volumes_path(), backup2dir.format(obj='volumes')],
+            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+        ]
+    elif obj == 'ops':
+        srcLi = [
+            [release_path(), backup2dir.format(obj='release')],
+            [servers_path(), backup2dir.format(obj='servers')],
+            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+        ]
+    elif obj == 'docker':
+        srcLi = [
+            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+        ]
+    elif obj == 'release':
+        srcLi = [
+            [release_path(), backup2dir.format(obj='release')],
+        ]
+    elif obj == 'servers':
+        srcLi = [
+            [servers_path(), backup2dir.format(obj='servers')],
+        ]
+    elif obj == 'var':
+        srcLi = [
+            [var_path(), backup2dir.format(obj='var')],
+        ]
+    elif obj == 'volumes':
+        srcLi = [
+            [volumes_path(), backup2dir.format(obj='volumes')],
+        ]
+    else:
+        raise er.UnsupportedBackupObject(obj)
+
+    for s in srcLi:
+        if not os.path.isdir(s[1]):
+            os.mkdir(s[1])
+        if format:
+            if not link_desc:
+                # 组装 link_desc
+                lsdir = []
+                # 排除不符合 format 的目录
+                for i in os.listdir(s[1]):
+                    try:
+                        time.strptime(i, format)
+                        lsdir.append(i)
+                    except ValueError:
+                        pass
+                if lsdir:
+                    lsdir.sort(reverse=True)
+                    # link 目录是排序后最大的目录
+                    link_dir = lsdir[0]
+                    link_desc = os.path.join(work_path(), s[1], link_dir)
+                    if keep > 0:
+                        # 本次的备份也算一个
+                        rm_dir = lsdir[keep-1:]
+                        for r in rm_dir:
+                            rd = os.path.join(s[1], r)
+                            print('delete:', rd)
+                            # docker-compose.yaml 是文件，其他是目录
+                            if os.path.isdir(rd):
+                                shutil.rmtree(rd)
+                            else:
+                                os.remove(rd)
+                        if keep == 1:
+                            link_desc = ''
+        rsync_backup(hosts, s[0], os.path.join(s[1], time.strftime(
+            format, time.localtime(time.time()))), link_desc)
 
 
 def docker_compose_cmd(cmd, hosts):

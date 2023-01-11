@@ -61,7 +61,6 @@ class ArgsError(DropsErr):
     def __str__(self):
         return 'Args error: %s.' % (' '.join(self.args))
 
-
 class UnsupportedSyncObject(DropsErr):
     def __str__(self) -> str:
         return 'Unsupported sync object: %s.' % (' '.join(self.args))
