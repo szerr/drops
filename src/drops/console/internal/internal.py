@@ -43,20 +43,20 @@ def container_path():
 
 
 def servers_path():
-    return container_path() + '/servers/'
+    return container_path() + 'servers/'
 
 
 def docker_path():
-    return container_path() + '/docker-compose.yaml'
+    return container_path() + 'docker-compose.yaml'
 
 
 def release_path():
     # 发布路径
-    return container_path() + '/release/'
+    return container_path() + 'release/'
 
 
 def var_path():
-    return container_path() + '/var/'
+    return container_path() + 'var/'
 
 
 def docker_cmd_template(cmd):
@@ -207,7 +207,7 @@ def rsync_docker(hosts, force=False):
     detection_cmd('rsync')
     for host in hosts.values():
         if not force and not confirm_drops_project(host):
-            if not user_confirm("主机 %s 远程目录可能不是 drops 项目，是否继续同步？" % host.host):
+            if not user_confirm("主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (host.host, container_path())):
                 raise er.UserCancel
         c = ssh.Client(**host.to_conf())
         _, status = c.exec(' mkdir -p ' + container_path())
