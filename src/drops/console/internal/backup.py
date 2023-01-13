@@ -33,7 +33,7 @@ def add_backup_cmd(s):
     p.add_argument('-f', '--format', default='%Y-%m-%d_%H:%M:%S',
                    help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
-                   help='未更改时链接到指定文件夹，如果指定了 format，会默认开启。默认是备份路径中符合 format 排序后最大的文件夹。')
+                   help='未更改时链接到指定文件夹。默认是备份路径中符合 format 排序后最大的文件夹。')
     p.add_argument('-k', '--keep',
                    type=int, help="保留的备份个数，只有 format 开启时启用。本次备份也算一个。-1 保留所有。", default='-1')
 

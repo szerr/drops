@@ -91,12 +91,16 @@ def rsync2remotely(host, src, target):
 def rsync2local(host, src, target):
     # rsync 远程同步到本地
     if host.key:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
+        b = 'rsync -avzP --del -e "ssh -p {port} -i %s" {username}@{host}:{src} {target}'.format(
+            src=src, target=target, port=host.port, username=host.username, host=host.host)
+        print(b)
+        b = b % host.key
     else:
         detection_cmd('sshpass')
-        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host)
+        b = 'sshpass -p %s rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
+            src=src, target=target,  port=host.port, username=host.username, host=host.host)
+        print(b)
+        b = b % host.password
     os.system(b)
 
 
@@ -343,6 +347,8 @@ def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1
                     lsdir.append(i)
                 except ValueError:
                     pass
+            if not lsdir:
+                print("s[1] 路径下没有找到符合 %s 的文件夹，--link-dest 功能关闭。" % (format))
             # 备份文件夹的时间命名
             tar_time = time.strftime(
                 format, time.localtime(time.time()))
