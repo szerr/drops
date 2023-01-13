@@ -72,3 +72,10 @@ class Client():
         o, e, s = stdout.read().decode(self.coding), stderr.read().decode(
             self.coding), stdout.channel.exit_status
         return o, e, s
+
+    def retry_exec(self, b, show=True):
+        # 遇到 -1 重试，只能用于可以执行多次不会出问题的命令。
+        while True:
+            a, s = self.exec(b, show)
+            if s != '-1':
+                return a, s
