@@ -103,12 +103,16 @@ def rsync2local(host, src, target):
 def rsync2local_link_dest(host, src, target, link_dest):
     # rsync 远程同步到本地，设置链接
     if host.key:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+        b = 'rsync -avzP --del -e "ssh -p {port} -i %s" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
+            src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+        print(b)
+        b % host.key
     else:
         detection_cmd('sshpass')
-        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+        b = 'sshpass -p {%s} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
+            src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+        print(b)
+        b % host.password
     os.system(b)
 
 
