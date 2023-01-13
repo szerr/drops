@@ -31,7 +31,7 @@ def add_backup_cmd(s):
     p.add_argument('-t', '--target',
                    help="目标路径，文件会备份到路径下 obj 对应的文件夹中。", default='backup/')
     p.add_argument('-f', '--format',
-                   help='目标路径下的时间格式，与 python time.strftime format 参数相同。默认不创建文件夹。')
+                   help='有这个参数，会目标路径下创建当前时间的文件夹，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
                    help='未更改时链接到指定文件夹，如果指定了 format，会默认开启。默认是备份路径中符合 format 排序后最大的文件夹。')
     p.add_argument('-k', '--keep',

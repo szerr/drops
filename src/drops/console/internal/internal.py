@@ -275,9 +275,8 @@ def rsync_backup(hosts, src, target, link_desc=''):
     detection_cmd('rsync')
     for host in hosts.values():
         if link_desc:
-            rsync2local_link_dest(host, src, target, link_desc)
-        else:
-            rsync2local(host, src, target)
+            return rsync2local_link_dest(host, src, target, link_desc)
+        return rsync2local(host, src, target)
 
 
 def backup(hosts, obj, target, format='', link_desc='', keep=-1):
@@ -359,8 +358,9 @@ def backup(hosts, obj, target, format='', link_desc='', keep=-1):
                                 os.remove(rd)
                         if keep == 1:
                             link_desc = ''
-        rsync_backup(hosts, s[0], os.path.join(s[1], time.strftime(
-            format, time.localtime(time.time()))), link_desc)
+            return rsync_backup(hosts, s[0], os.path.join(s[1], time.strftime(
+                format, time.localtime(time.time()))), link_desc)
+        return rsync_backup(hosts, s[0], s[1], link_desc)
 
 
 def docker_compose_cmd(cmd, hosts):
