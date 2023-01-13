@@ -30,8 +30,8 @@ def add_backup_cmd(s):
         help='''同步的对象。docker: docker-compose，ops 是除 var 和 volumes 的所有。''')
     p.add_argument('-t', '--target',
                    help="目标路径，文件会备份到路径下 obj 对应的文件夹中。", default='backup/')
-    p.add_argument('-f', '--format',
-                   help='有这个参数，会目标路径下创建当前时间的文件夹，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
+    p.add_argument('-f', '--format', default='%Y-%m-%d_%H:%M:%S',
+                   help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
                    help='未更改时链接到指定文件夹，如果指定了 format，会默认开启。默认是备份路径中符合 format 排序后最大的文件夹。')
     p.add_argument('-k', '--keep',

@@ -106,13 +106,13 @@ def rsync2local_link_dest(host, src, target, link_dest):
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
             src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
         print(b)
-        b % host.key
+        b = b % host.key
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p {%s} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
             src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
         print(b)
-        b % host.password
+        b = b % host.password
     os.system(b)
 
 
@@ -283,7 +283,7 @@ def rsync_backup(hosts, src, target, link_desc=''):
         return rsync2local(host, src, target)
 
 
-def backup(hosts, obj, target, format='', link_desc='', keep=-1):
+def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1):
     backup2dir = target
     link_dir = link_desc
     # 如果设定了时间格式
@@ -333,37 +333,40 @@ def backup(hosts, obj, target, format='', link_desc='', keep=-1):
     for s in srcLi:
         if not os.path.isdir(s[1]):
             os.mkdir(s[1])
-        if format:
-            if not link_desc:
-                # 组装 link_desc
-                lsdir = []
-                # 排除不符合 format 的目录
-                for i in os.listdir(s[1]):
-                    try:
-                        time.strptime(i, format)
-                        lsdir.append(i)
-                    except ValueError:
-                        pass
-                if lsdir:
-                    lsdir.sort(reverse=True)
-                    # link 目录是排序后最大的目录
-                    link_dir = lsdir[0]
-                    link_desc = os.path.join(work_path(), s[1], link_dir)
-                    if keep > 0:
-                        # 本次的备份也算一个
-                        rm_dir = lsdir[keep-1:]
-                        for r in rm_dir:
-                            rd = os.path.join(s[1], r)
-                            print('delete:', rd)
-                            # docker-compose.yaml 是文件，其他是目录
-                            if os.path.isdir(rd):
-                                shutil.rmtree(rd)
-                            else:
-                                os.remove(rd)
-                        if keep == 1:
-                            link_desc = ''
-            return rsync_backup(hosts, s[0], os.path.join(s[1], time.strftime(
-                format, time.localtime(time.time()))), link_desc)
+        if not link_desc:
+            # 组装 link_desc
+            lsdir = []
+            # 排除不符合 format 的目录
+            for i in os.listdir(s[1]):
+                try:
+                    time.strptime(i, format)
+                    lsdir.append(i)
+                except ValueError:
+                    pass
+            # 备份文件夹的时间命名
+            tar_time = time.strftime(
+                format, time.localtime(time.time()))
+            if tar_time in lsdir:
+                lsdir.remove(tar_time)  # 排除掉本次要备份的文件夹
+            if lsdir:
+                lsdir.sort(reverse=True)
+                # link 目录是排序后最大的目录
+                link_dir = lsdir[0]
+                link_desc = os.path.join(work_path(), s[1], link_dir)
+                if keep > 0:
+                    # 本次新增的备份也算一个
+                    rm_dir = lsdir[keep-1:]
+                    for r in rm_dir:
+                        rd = os.path.join(s[1], r)
+                        print('delete:', rd)
+                        # docker-compose.yaml 是文件，其他是目录
+                        if os.path.isdir(rd):
+                            shutil.rmtree(rd)
+                        else:
+                            os.remove(rd)
+                    if keep == 1:
+                        link_desc = ''
+            return rsync_backup(hosts, s[0], os.path.join(s[1], tar_time), link_desc)
         return rsync_backup(hosts, s[0], s[1], link_desc)
 
 
