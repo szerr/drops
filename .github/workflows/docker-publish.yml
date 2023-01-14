@@ -27,5 +27,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: latest
+          tags: drops:latest
           labels: ${{ steps.meta.outputs.labels }}
