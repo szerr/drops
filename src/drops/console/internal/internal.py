@@ -287,13 +287,15 @@ def rsync_backup(hosts, src, target, link_desc=''):
         return rsync2local(host, src, target)
 
 
-def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1):
+def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False):
     backup2dir = target
     link_dir = link_desc
+    if cod:  # 创建项目名的文件夹
+        backup2dir = os.path.join(backup2dir, config.Conf().getProjectName())
     # 如果设定了时间格式
     if format:
         # 备份目录是备份对象下的时间目录
-        backup2dir = os.path.join(target, '{obj}')
+        backup2dir = os.path.join(backup2dir, '{obj}')
         # 如果设置了 link_desc
     # 需要备份的目录列表
     srcLi = []
@@ -348,7 +350,8 @@ def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1
                 except ValueError:
                     pass
             if not lsdir:
-                print("s[1] 路径下没有找到符合 %s 的文件夹，--link-dest 功能关闭。" % (format))
+                print("%s 路径下没有找到符合 %s 的文件夹，--link-dest 功能关闭。" %
+                      (s[1], format))
             # 备份文件夹的时间命名
             tar_time = time.strftime(
                 format, time.localtime(time.time()))

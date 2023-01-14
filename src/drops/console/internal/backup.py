@@ -22,24 +22,26 @@ from . import er
 
 def add_backup_cmd(s):
     p = s.add_parser(
-        'backup', help='基于 rsync --del --link-dest 的增量备份。')
+        'backup', help='基于 rsync --del --link-dest 的增量备份。更改参数前先测试，以免写错删掉已有的备份文件。祝好运。')
     internal.add_arg_group_host(p)
     p.set_defaults(func=backup_cmd)
     p.add_argument('obj', type=str, default='volumes', choices=[
         'docker',  'release', 'servers', 'var', 'volumes', 'ops', 'all'], nargs='?',
-        help='''同步的对象。docker: docker-compose，ops 是除 var 和 volumes 的所有。''')
+        help='''同步的文件夹。docker: docker-compose，ops 是除 var 和 volumes 的所有。''')
     p.add_argument('-t', '--target',
-                   help="目标路径，文件会备份到路径下 obj 对应的文件夹中。", default='backup/')
+                   help="目标路径", default='backup/')
     p.add_argument('-f', '--format', default='%Y-%m-%d_%H:%M:%S',
                    help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
                    help='未更改时链接到指定文件夹。默认是备份路径中符合 format 排序后最大的文件夹。')
     p.add_argument('-k', '--keep',
                    type=int, help="保留的备份个数，只有 format 开启时启用。本次备份也算一个。-1 保留所有。", default='-1')
+    p.add_argument("-c", '--cod',
+                   help="在目标路径创建项目名命名的文件夹", default=False, action='store_true')
 
 
 def backup_cmd(p):
     hosts = internal.get_arg_group_host_from_conf(p)
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(hosts,  p.obj, p.target, p.format, p.link_dest, p.keep)
+    return internal.backup(hosts,  p.obj, p.target, p.format, p.link_dest, p.keep, p.cod)
