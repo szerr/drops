@@ -287,13 +287,13 @@ def rsync_backup(hosts, src, target, link_desc=''):
         return rsync2local(host, src, target)
 
 
-def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False):
+def backup(hosts, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
         backup2dir = os.path.join(backup2dir, config.Conf().getProjectName())
     # 如果设定了时间格式
-    if format:
+    if time_format:
         # 备份目录是备份对象下的时间目录
         backup2dir = os.path.join(backup2dir, '{obj}')
         # 如果设置了 link_desc
@@ -337,6 +337,7 @@ def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1
         raise er.UnsupportedBackupObject(obj)
 
     for s in srcLi:
+        to_path = s[1]
         if not os.path.isdir(s[1]):
             os.mkdir(s[1])
         if not link_desc:
@@ -345,16 +346,16 @@ def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1
             # 排除不符合 format 的目录
             for i in os.listdir(s[1]):
                 try:
-                    time.strptime(i, format)
+                    time.strptime(i, time_format)
                     lsdir.append(i)
                 except ValueError:
                     pass
             if not lsdir:
                 print("%s 路径下没有找到符合 %s 的文件夹，--link-dest 功能关闭。" %
-                      (s[1], format))
+                      (s[1], time_format))
             # 备份文件夹的时间命名
             tar_time = time.strftime(
-                format, time.localtime(time.time()))
+                time_format, time.localtime(time.time()))
             if tar_time in lsdir:
                 lsdir.remove(tar_time)  # 排除掉本次要备份的文件夹
             if lsdir:
@@ -375,8 +376,11 @@ def backup(hosts, obj, target, format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1
                             os.remove(rd)
                     if keep == 1:
                         link_desc = ''
-            return rsync_backup(hosts, s[0], os.path.join(s[1], tar_time), link_desc)
-        return rsync_backup(hosts, s[0], s[1], link_desc)
+            to_path = os.path.join(s[1], tar_time)
+        if not force and os.path.isdir(to_path) and os.listdir(to_path):
+            if not user_confirm("本地目录 %s 已存在且非空，是否继续同步？" % (to_path)):
+                raise er.UserCancel
+        rsync_backup(hosts, s[0], to_path, link_desc)
 
 
 def docker_compose_cmd(cmd, hosts):
