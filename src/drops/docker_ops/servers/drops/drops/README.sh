@@ -1,0 +1,1 @@
+创建项目名命名的文件夹，把项目的`drops.yaml`放在文件夹内，即可用`periodic_example/drops-backup.sh`自动备份。
