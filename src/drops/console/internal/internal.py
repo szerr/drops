@@ -145,23 +145,13 @@ def add_arg_force(p):
                    help="强制执行，不再提示确认。", default=False, action='store_true')
 
 
-def add_arg_group(p):
-    p.add_argument("-g", "--group",
-                   help="要执行操作的主机组，默认 test。", type=str, default='test')
+def add_arg_host(p):
+    p.add_argument('--hostAlias',
+                   help="要执行操作的主机别名。", type=str, nargs='*', default='test')
 
 
-def get_arg_group_from_conf(p):
-    return config.Conf().get_group(p.group)
-
-
-def add_arg_group_host(p):
-    add_arg_group(p)
-    p.add_argument('--hosts',
-                   help="要执行操作的主机。", type=str, nargs='*')
-
-
-def get_arg_group_host_from_conf(p):
-    return config.Conf().get_hosts(p.group, p.hosts)
+def get_arg_host_from_conf(p):
+    return config.Conf().get_host(p.hostAlias)
 
 
 def parse_args(p):
@@ -179,88 +169,82 @@ def detection_cmd(*bl):
     return True
 
 
-def ssh_shell(hosts, b):
+def ssh_shell(host, b):
     detection_cmd('ssh')
-    for host in hosts.values():
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + release_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + release_path())
-        if host.key:
-            os.system(ssh_template_key(
-                host.key, host.port, host.username, host.host, b))
-        else:
-            detection_cmd('sshpass')
-            os.system(ssh_template_pwd(
-                host.password, host.port, host.username, host.host, b))
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + release_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + release_path())
+    if host.key:
+        os.system(ssh_template_key(
+            host.key, host.port, host.username, host.host, b))
+    else:
+        detection_cmd('sshpass')
+        os.system(ssh_template_pwd(
+            host.password, host.port, host.username, host.host, b))
 
 
-def rsync_release(hosts, force):
+def rsync_release(host, force):
     print('------- sync release -------')
     detection_cmd('rsync')
-    for host in hosts.values():
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + release_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + release_path())
-        # TODO 0.2.1 添加向下兼容
-        if not os.path.isdir('release'):
-            os.mkdir('release')
-        rsync2remotely(host, 'release', container_path())
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + release_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + release_path())
+    # TODO 0.2.1 添加向下兼容
+    if not os.path.isdir('release'):
+        os.mkdir('release')
+    rsync2remotely(host, 'release', container_path())
 
 
-def rsync_docker(hosts, force=False):
+def rsync_docker(host, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    for host in hosts.values():
-        if not force and not confirm_drops_project(host):
-            if not user_confirm("主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (host.host, container_path())):
-                raise er.UserCancel
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + container_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + container_path())
-        rsync2remotely(host, 'docker-compose.yaml', docker_path())
+    if not force and not confirm_drops_project(host):
+        if not user_confirm("主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (host.host, container_path())):
+            raise er.UserCancel
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + container_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + container_path())
+    rsync2remotely(host, 'docker-compose.yaml', docker_path())
 
 
-def rsync_servers(hosts, force):
+def rsync_servers(host, force):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    for host in hosts.values():
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + servers_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + servers_path())
-        rsync2remotely(host, 'servers', container_path())
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + servers_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + servers_path())
+    rsync2remotely(host, 'servers', container_path())
 
 
-def rsync_var(hosts, force):
-    for host in hosts.values():
-        if not confirm_empty_dir(host, var_path()):
-            if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, var_path())):
-                raise er.UserCancel
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + var_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + var_path())
-        rsync2remotely(host, 'var', container_path())
+def rsync_var(host, force):
+    if not confirm_empty_dir(host, var_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, var_path())):
+            raise er.UserCancel
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + var_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + var_path())
+    rsync2remotely(host, 'var', container_path())
 
 
-def rsync_volumes(hosts, force):
-    for host in hosts.values():
-        if not confirm_empty_dir(host, volumes_path()):
-            if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, volumes_path())):
-                raise er.UserCancel
-        c = ssh.Client(**host.to_conf())
-        _, status = c.retry_exec(' mkdir -p ' + volumes_path())
-        if status != 0:
-            raise er.CmdExecutionError('mkdir -p ' + volumes_path())
-        rsync2remotely(host, 'volumes', container_path())
+def rsync_volumes(host, force):
+    if not confirm_empty_dir(host, volumes_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, volumes_path())):
+            raise er.UserCancel
+    c = ssh.Client(**host.to_conf())
+    _, status = c.retry_exec(' mkdir -p ' + volumes_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + volumes_path())
+    rsync2remotely(host, 'volumes', container_path())
 
 
-def sync(hosts, force=False, obj='ops'):
-    arg = (hosts, force)
+def sync(host, force=False, obj='ops'):
+    arg = (host, force)
     if obj == 'ops':
         rsync_docker(*arg)
         rsync_release(*arg)
@@ -279,15 +263,14 @@ def sync(hosts, force=False, obj='ops'):
         raise er.UnsupportedSyncObject(obj)
 
 
-def rsync_backup(hosts, src, target, link_desc=''):
+def rsync_backup(host, src, target, link_desc=''):
     detection_cmd('rsync')
-    for host in hosts.values():
-        if link_desc:
-            return rsync2local_link_dest(host, src, target, link_desc)
-        return rsync2local(host, src, target)
+    if link_desc:
+        return rsync2local_link_dest(host, src, target, link_desc)
+    return rsync2local(host, src, target)
 
 
-def backup(hosts, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
+def backup(host, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
@@ -380,10 +363,10 @@ def backup(hosts, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', ke
         if not force and os.path.isdir(to_path) and os.listdir(to_path):
             if not user_confirm("本地目录 %s 已存在且非空，是否继续同步？" % (to_path)):
                 raise er.UserCancel
-        rsync_backup(hosts, s[0], to_path, link_desc)
+        rsync_backup(host, s[0], to_path, link_desc)
 
 
-def docker_compose_cmd(cmd, hosts):
+def docker_compose_cmd(cmd, host):
     # docker_compose_cmd 解析命令行参数，只需要 ssh 部分的参数。
     # 接收一个字符串模板，
     # 拼接进入工作目录的命令，传入 cmd 并返回。
@@ -391,24 +374,17 @@ def docker_compose_cmd(cmd, hosts):
     for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
-    return exec(docker_cmd_template(cmd), hosts)
+    return exec(docker_cmd_template(cmd), host)
 
 
-def exec(cmd, hosts):
+def exec(cmd, host):
     # 对 host 执行任意远程命令
-    result = {}
-    for host in hosts.values():
-        print('run host: ', host.host)
-        c = ssh.Client(**host.to_conf())
-        stdout, status = c.exec(cmd)
-        if status != 0:
-            result[host.host] = [stdout, status]
-
-    if result:
+    print('run host: ', host.host)
+    c = ssh.Client(**host.to_conf())
+    stdout, status = c.exec(cmd)
+    if status != 0:
         print('----------------- fail -----------------')
-        for k, i in result.items():
-            print('host:', k)
-            print(i[0], i[1])
+        print(stdout, status)
         raise er.CmdExecutionError(cmd)
     return 0
 

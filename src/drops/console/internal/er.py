@@ -85,15 +85,9 @@ class ConfigurationFileFormatError(DropsErr):
     def __str__(self):
         return 'Configuration file format error.'
 
-
-class HostGroupNotExist(DropsErr):
+class HostDoesNotExist(DropsErr):
     def __str__(self):
-        return 'Host group "%s" does not exit.' % self.args[0]
-
-
-class HostNotInGroup(DropsErr):
-    def __str__(self):
-        return 'Host "%s" is not in group "%s".' % (self.args[1], self.args[0])
+        return 'Host %s does not exist' % self.args[0]
 
 
 class CmdCannotContain(DropsErr):

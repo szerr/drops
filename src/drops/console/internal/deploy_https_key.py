@@ -22,18 +22,18 @@ from . import er
 def add_deploy_https_key_cmd(s):
     p = s.add_parser(
         'deployHttpsKey', help='申请并部署 https 证书。')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     p.add_argument("-f", '--force',
                    help="重新申请证书。", default=False, action='store_true')
     p.set_defaults(func=deploy_https_key_cmd)
 
 
 def deploy_https_key_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
+    host = internal.get_arg_host_from_conf(p)
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
-    internal.docker_compose_cmd('restart acme.sh', hosts)
+    internal.docker_compose_cmd('restart acme.sh', host)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
-    return internal.docker_compose_cmd(b, hosts)
+    return internal.docker_compose_cmd(b, host)

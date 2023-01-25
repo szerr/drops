@@ -21,10 +21,10 @@ from . import internal
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
         'nginxReload', help='重载 nginx 配置，不会重载证书。')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     p.set_defaults(func=nginx_reload_cmd)
 
 
 def nginx_reload_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', hosts)
+    host = internal.get_arg_host_from_conf(p)
+    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', host)

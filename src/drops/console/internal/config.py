@@ -96,47 +96,29 @@ class Conf():
         self.save()
         return self
 
-    def add_host(self, group, host, port=22, username='root', password=None, key=None, coding='utf-8'):
+    def add_host(self, hostAlias, host, port=22, username='root', password=None, key=None, coding='utf-8'):
         # 增加 主机配置。coding 为服务器 shell 编码
         self.open()
-        g = self.C['hosts'].get(group, {})
-        if g is None:
-            g = {}
-
-        if host in g:
-            raise er.HostExisted(host)
-
         h = Host(host, port, username, password, key, coding)
-        g[host] = h.to_conf()
-        self.C['hosts'][group] = g
+        self.C['hosts'][hostAlias] = h.to_conf()
         self.save()
         return self
 
-    def change_host(self, group, host, port=22, username='root', password=None, key=None, coding='utf-8'):
+    def change_host(self, hostAlias, host, port=22, username='root', password=None, key=None, coding='utf-8'):
         # 修改 host
         self.open()
-        g = self.C['hosts'].get(group, {})
-        if g is None:
-            g = {}
-
         h = Host(host, port, username, password, key, coding)
-        g[host] = h.to_conf()
-        self.C['hosts'][group] = g
+        self.C['hosts'][hostAlias] = h.to_conf()
         self.save()
         return self
 
-    def drop_host(self, group, host):
+    def drop_host(self, hostAlias):
         # 移除 host
         self.open()
-        g = self.C['hosts'].get(group, {})
-        if g is None:
-            g = {}
-
-        if host in g:
-            g.pop(host)
+        if hostAlias in self.C['hosts']:
+            self.C['hosts'].pop(hostAlias)
         else:
-            raise er.HostNotInGroup(group, host)
-        self.C['hosts'][group] = g
+            raise er.HostDoesNotExist(hostAlias)
         self.save()
         return self
 
@@ -166,52 +148,20 @@ class Conf():
         for h, item in hs.items():
             self.print_host(h, item, head+'    ')
 
-    def print_group(self, gs, head=''):
-        for h, hs in gs.items():
-            self.print_hosts(h, hs, head)
-
-    def ls(self, group=None, host=None):
+    def ls(self, host=None):
         # 输出 host
         self.open()
-        if group == None:
-            self.print_group(self.C['hosts'])
-            return self
-
-        if group not in self.C['hosts']:
-            print('group "%s" does not exist' % (group))
-            return self
-
-        g = self.C['hosts'].get(group, {})
 
         if host is None:
-            self.print_hosts(group, g)
+            self.print_hosts(self.C['hosts'])
             return self
 
-        if host not in g:
-            print('"%s" is not in group "%s"' % (host, group))
-            return self
-        self.print_host(host, g[host])
+        self.print_host(host, self.C['hosts'][host])
         return self
 
-    def get_group(self, group):
-        # 获取一个 group
-        self.open()
-        if group not in self.C['hosts']:
-            raise er.HostGroupNotExist(group)
-        return {k: Host(**i) for k, i in self.C['hosts'][group].items()}
-
-    def get_host(self, group, host):
+    def get_host(self, host_type):
         # 获取单个 host
         self.open()
-        gs = self.get_group(group)
-        if host not in gs:
-            raise er.HostNotInGroup(group, host)
-        return Host(**gs[host])
-
-    def get_hosts(self, group, hosts=[]):
-        # 获取多个host，hosts 为空时返回整个 group 的 host。
-        self.open()
-        gs = self.get_group(group)
-        if hosts:
-            return {k: i for k, i in gs.items() if k in hosts}
-        return gs
+        if host_type in self.C['hosts']:
+            return Host(**self.C['hosts'][host_type])
+        raise er.HostDoesNotExist(host_type)

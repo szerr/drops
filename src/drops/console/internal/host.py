@@ -25,7 +25,7 @@ def host_cmd(a):
         if a.host == None:
             raise er.ArgsError('the following arguments are required:', 'host')
         c = {'host': a.host, 'port': a.port,
-             'username': a.username, 'coding': a.coding}
+             'username': a.username, 'coding': a.coding, 'hostAlias': a.hostAlias}
         if a.password is not None:
             c['password'] = a.password
         elif a.key is not None:
@@ -33,14 +33,14 @@ def host_cmd(a):
         else:
             raise er.ArgsError('password and key must write one.')
         if a.cmd == 'change':
-            config.Conf().change_host(group=a.group, **c)
+            config.Conf().change_host(**c)
         else:
-            config.Conf().add_host(group=a.group, **c)
+            config.Conf().add_host(**c)
 
     elif a.cmd == 'drop':
         if a.host == None:
             raise er.ArgsError('the following arguments are required:', 'host')
-        config.Conf().drop_host(group=a.group, host=a.host)
+        config.Conf().drop_host(host=a.hostAlias)
     elif a.cmd == 'ls':
         config.Conf().ls()
     else:
@@ -50,10 +50,10 @@ def host_cmd(a):
 def add_host_cmd(s):
     p = s.add_parser(
         'host', help='管理 drops 部署主机。因为密码是明文存储的，强烈建议用 key 做验证。')
-    p.add_argument("-g", '--group',
-                   help="Add to host group (default to test host group).", type=str, default='test')
     p.add_argument('cmd', type=str, choices=[
                    'ls', 'add', 'drop', 'change'], nargs='?', help="default ls")
+    p.add_argument("hostAlias", metavar="test",
+                   type=str, help="host 类型，比方说 test、dev、online。test 关键字，所有命令不指定 --hostAlias 的话默认对 test 进行操作。")
     p.add_argument("host", metavar="ssh.example.com",
                    type=str, help="host.", default=None, nargs='?')
     p.add_argument("port", metavar="22",

@@ -23,7 +23,7 @@ from . import er
 def add_backup_cmd(s):
     p = s.add_parser(
         'backup', help='基于 rsync --del --link-dest 的增量备份。更改参数前先测试，以免写错删掉已有的备份文件。')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=backup_cmd)
     p.add_argument('obj', type=str, default='volumes', choices=[
@@ -42,7 +42,7 @@ def add_backup_cmd(s):
 
 
 def backup_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
+    host = internal.get_arg_host_from_conf(p)
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(hosts,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
+    return internal.backup(host,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)

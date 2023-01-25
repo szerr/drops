@@ -22,11 +22,11 @@ from . import internal
 def add_nginx_force_reload_cmd(s):
     p = s.add_parser(
         'nginxForceReload', help="重载 nginx 配置，会重载证书。")
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     p.set_defaults(func=nginx_force_reload_cmd)
 
 
 def nginx_force_reload_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
+    host = internal.get_arg_host_from_conf(p)
     internal.exec(internal.docker_cmd_template(
-        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), hosts)
+        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), host)

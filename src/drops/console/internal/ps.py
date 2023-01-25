@@ -20,11 +20,11 @@ from . import internal
 
 def add_ps_cmd(s):
     p = s.add_parser(
-        'ps', help='输出正在运行的容器，默认输出 test group')
-    internal.add_arg_group_host(p)
+        'ps', help='输出正在运行的容器。')
+    internal.add_arg_host(p)
     p.set_defaults(func=ps_cmd)
 
 
 def ps_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.docker_compose_cmd("ps", hosts)
+    host = internal.get_arg_host_from_conf(p)
+    return internal.docker_compose_cmd("ps", host)

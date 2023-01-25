@@ -22,11 +22,11 @@ from . import internal
 def add_init_env_debian_cmd(s):
     p = s.add_parser(
         'initDebianEnv', help='初始化 debian 系远程环境。')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     p.set_defaults(func=init_env_debian_cmd)
 
 
 def init_env_debian_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
+    host = internal.get_arg_host_from_conf(p)
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    internal.exec(bin, hosts)
+    internal.exec(bin, host)

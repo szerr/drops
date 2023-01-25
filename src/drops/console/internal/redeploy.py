@@ -21,12 +21,12 @@ from . import internal
 def add_redeploy_cmd(s):
     p = s.add_parser(
         'redeploy', help='部署并启动服务，重新编译容器，移除不再用的容器。')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=redeploy_cmd)
 
 
 def redeploy_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
-    internal.sync(hosts, p.force)
-    return internal.docker_compose_cmd("up -d --build --remove-orphans", hosts)
+    host = internal.get_arg_host_from_conf(p)
+    internal.sync(host, p.force)
+    return internal.docker_compose_cmd("up -d --build --remove-orphans", host)

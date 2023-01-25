@@ -26,13 +26,13 @@ def add_logs_cmd(s):
                    type=str, help="容器名")
     p.add_argument("-f", '--follow',
                    help="持续日志输出。", default=False, action='store_true')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     p.set_defaults(func=logs_cmd)
 
 
 def logs_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
+    host = internal.get_arg_host_from_conf(p)
     b = 'logs '
     if p.follow:
         b += '-f '
-    return internal.docker_compose_cmd(b+p.container, hosts)
+    return internal.docker_compose_cmd(b+p.container, host)

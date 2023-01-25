@@ -22,7 +22,7 @@ from . import internal
 def add_sync_cmd(s):
     p = s.add_parser(
         'sync', help='同步当前项目到远程路径')
-    internal.add_arg_group_host(p)
+    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
@@ -33,5 +33,5 @@ var, volumes 建议只用来同步初始数据。
 
 
 def sync_cmd(p):
-    hosts = internal.get_arg_group_host_from_conf(p)
-    return internal.sync(hosts, p.force, p.obj)
+    host = internal.get_arg_host_from_conf(p)
+    return internal.sync(host, p.force, p.obj)

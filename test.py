@@ -25,7 +25,7 @@ import shutil
 testProjectName = 'te'
 
 binLi = [
-    'drops --debug host add example.com 3003 -k ~/.ssh/id_ed25519',
+    'drops --debug host add test example.com 3003 -k ~/.ssh/id_ed25519',
     'drops --debug initDebianEnv',
     'drops --debug project name drops',
     'drops --debug sync',
@@ -44,7 +44,7 @@ binLi = [
     'drops --debug restart nginx',
     'drops --debug stop',
     'drops --debug rm -f',
-    'drops --debug backup all -f %Y-%m-%d_%H:%M:%S -k 1',
+    'drops --debug backup all -d %Y-%m-%d_%H:%M:%S -k 1',
     'drops --debug undeploy -f',
 ]
 
