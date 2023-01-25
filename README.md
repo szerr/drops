@@ -43,11 +43,11 @@ cd example
 ### 配置远程服务器
 
 ```sh
-drops host add ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个服务器到默认的 test group。
+drops host add test ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个测试服务器。
 drops init_env_debian # debian 系这样初始化远程环境
 ```
 如果配置出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
-centos 配置太复杂了，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest>  下载安装 docker-compose。
+centos 配置很复杂，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest>  下载安装 docker-compose。
 podman-compose 目前（2022年12月）还是有一些问题，会造成 drops 部署部分不能用。
 
 ### 部署示例服务
@@ -86,7 +86,7 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 编辑`docker-compose.yaml`，定义你需要的服务。
 
-**注意！不要将应用数据，容器生成的文件放到 servers、releace，同步时文件会被删除。**
+**注意！不要将应用数据，容器生成的文件放到 servers、releace，同步时文件会被删除或覆盖。**
 
 参照 `servers/crond/periodic_example/backup.sh` 快速搭建异地增量备份。
 
@@ -137,7 +137,7 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 | `deploy`           | 同步后启动容器。                                             |
 | `redeploy`         | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
 | `sync`             | 同步项目到服务器。                                           |
-| `backup` | 备份远程目录到本地。如 `drops backup -f %Y-%m-%d_%H:%M:%S` |
+| `backup` | 备份远程目录到本地。如 `drops backup -d %Y-%m-%d_%H:%M:%S` |
 | `ps`               | 查看当前运行的容器。                                         |
 | `start`            | 启动容器。                                                   |
 | `up`               | 创建和启动容器。                                             |
