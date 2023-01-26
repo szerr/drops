@@ -53,7 +53,7 @@ def add_host_cmd(s):
     p.add_argument('cmd', type=str, choices=[
                    'ls', 'add', 'drop', 'change'], nargs='?', help="default ls")
     p.add_argument("hostAlias", metavar="test",
-                   type=str, help="host 类型，比方说 test、dev、online。test 关键字，所有命令不指定 --hostAlias 的话默认对 test 进行操作。")
+                   type=str, help="host 类型，比方说 default、test、dev、online。default 是关键字，所有命令不指定 --hostAlias 的话默认对 default 进行操作。")
     p.add_argument("host", metavar="ssh.example.com",
                    type=str, help="host.", default=None, nargs='?')
     p.add_argument("port", metavar="22",

@@ -146,8 +146,8 @@ def add_arg_force(p):
 
 
 def add_arg_host(p):
-    p.add_argument('--hostAlias',
-                   help="要执行操作的主机别名。", type=str, nargs='*', default='test')
+    p.add_argument('-a', '--hostAlias',
+                   help="要执行操作的主机别名。", type=str, default='default')
 
 
 def get_arg_host_from_conf(p):
@@ -361,7 +361,7 @@ def backup(host, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', kee
                         link_desc = ''
             to_path = os.path.join(s[1], tar_time)
         if not force and os.path.isdir(to_path) and os.listdir(to_path):
-            if not user_confirm("本地目录 %s 已存在且非空，是否继续同步？" % (to_path)):
+            if not user_confirm("本地目录 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % (to_path)):
                 raise er.UserCancel
         rsync_backup(host, s[0], to_path, link_desc)
 

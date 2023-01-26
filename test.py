@@ -25,11 +25,11 @@ import shutil
 testProjectName = 'te'
 
 binLi = [
-    'drops --debug host add test example.com 3003 -k ~/.ssh/id_ed25519',
+    'drops --debug host add default example.com 3003 -k ~/.ssh/id_ed25519',
     'drops --debug initDebianEnv',
     'drops --debug project name drops',
-    'drops --debug sync',
-    'drops --debug sync volumes',
+    'drops --debug sync  -a default',
+    'drops --debug sync volumes --hostAlias default',
     'drops --debug sync var',
     'drops --debug deploy',
     'curl http://example.com',

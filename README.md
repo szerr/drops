@@ -43,7 +43,7 @@ cd example
 ### 配置远程服务器
 
 ```sh
-drops host add test ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个测试服务器。
+drops host add default ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个测试服务器。
 drops init_env_debian # debian 系这样初始化远程环境
 ```
 如果配置出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
@@ -92,9 +92,9 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 一个系统可以部署到多台机器，其中机器可以分为：线上，测试1，测试2，bulabula。。。。
 
-`drops host` 可以管理多个分组的机器。可以试试 `drops ls` 输出目前的 `group` 和 `host`
+`drops host` 可以管理多台机器。可以试试 `drops ls` 输出目前的 `group` 和 `host`
 
-`drops` 没有指定 `-g` 参数的时候，默认对 `test group`  下所有机器做操作。所以可以当作单机部署工具用。
+`drops` 没有指定 `-a\--hostAlias` 参数的时候，默认对 `default`  下所有机器做操作。所以可以当作单机部署工具用。
 
 ## 与项目集成
 
