@@ -62,7 +62,7 @@ class Client():
                 if s == b'':
                     break
                 so += s
-        return so, stdout.channel.exit_status
+        return so, stdout.channel.recv_exit_status()
 
     def exed(self, b):
         # 返回标准输出，标准错误，状态码
@@ -70,12 +70,5 @@ class Client():
         stdin, stdout, stderr = self._client.exec_command(
             b + ' exit 0')
         o, e, s = stdout.read().decode(self.coding), stderr.read().decode(
-            self.coding), stdout.channel.exit_status
+            self.coding), stdout.channel.recv_exit_status()
         return o, e, s
-
-    def retry_exec(self, b, show=True):
-        # 遇到 -1 重试，只能用于可以执行多次不会出问题的命令。
-        while True:
-            a, s = self.exec(b, show)
-            if s != '-1':
-                return a, s
