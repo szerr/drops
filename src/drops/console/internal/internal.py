@@ -177,10 +177,6 @@ def detection_cmd(*bl):
 
 def ssh_shell(host, b):
     detection_cmd('ssh')
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + release_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + release_path())
     if host.key:
         os.system(ssh_template_key(
             host.key, host.port, host.username, host.host, b))
@@ -193,10 +189,6 @@ def ssh_shell(host, b):
 def rsync_release(host, force):
     print('------- sync release -------')
     detection_cmd('rsync')
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + release_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + release_path())
     # TODO 0.2.1 添加向下兼容
     if not os.path.isdir('release'):
         os.mkdir('release')
@@ -210,20 +202,12 @@ def rsync_docker(host, force=False):
     if not force and not confirm_drops_project(host):
         if not user_confirm("主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (host.host, container_path())):
             raise er.UserCancel
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + container_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + container_path())
     rsync2remotely(host, 'docker-compose.yaml', docker_path())
 
 
 def rsync_servers(host, force):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + servers_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + servers_path())
     rsync2remotely(host, 'servers', container_path())
 
 
@@ -231,10 +215,6 @@ def rsync_var(host, force):
     if not confirm_empty_dir(host, var_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, var_path())):
             raise er.UserCancel
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + var_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + var_path())
     rsync2remotely(host, 'var', container_path())
 
 
@@ -242,14 +222,15 @@ def rsync_volumes(host, force):
     if not confirm_empty_dir(host, volumes_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, volumes_path())):
             raise er.UserCancel
-    c = ssh.Client(**host.to_conf())
-    _, status = c.retry_exec(' mkdir -p ' + volumes_path())
-    if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + volumes_path())
     rsync2remotely(host, 'volumes', container_path())
 
 
 def sync(host, force=False, obj='ops'):
+    # rsync 不会创建上一层文件夹，同步前创建
+    c = ssh.Client(**host.to_conf())
+    _, status = c.exec(' mkdir -p ' + container_path())
+    if status != 0:
+        raise er.CmdExecutionError('mkdir -p ' + container_path() + ', code=' + str(status))
     arg = (host, force)
     if obj == 'ops':
         rsync_docker(*arg)
@@ -391,7 +372,7 @@ def exec(cmd, host):
     if status != 0:
         print('----------------- fail -----------------')
         print(stdout, status)
-        raise er.CmdExecutionError(cmd)
+        raise er.CmdExecutionError(cmd + ', code=' + str(status))
     return 0
 
 
