@@ -78,13 +78,19 @@ def ssh_template_pwd(password, port, username, host, b=''):
 def rsync2remotely(host, src, target):
     # rsync 本地同步到远程路径
     if host.key:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        echo_b = b.format(
+            src=src, target=target, key_path='<key_path>', port=host.port, username=host.username, host=host.host)
+        b = b.format(
             src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
     else:
         detection_cmd('sshpass')
-        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'.format(
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        echo_b = b.format(
+            src=src, target=target, password='<password>', port=host.port, username=host.username, host=host.host)
+        b = b.format(
             src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host)
-    print(b)
+    print(echo_b)
     os.system(b)
 
 
@@ -93,13 +99,13 @@ def rsync2local(host, src, target):
     if host.key:
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" {username}@{host}:{src} {target}'.format(
             src=src, target=target, port=host.port, username=host.username, host=host.host)
-        print(b)
+        print(b%('<key_path>'))
         b = b % host.key
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p %s rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
             src=src, target=target,  port=host.port, username=host.username, host=host.host)
-        print(b)
+        print(b%('<password>'))
         b = b % host.password
     os.system(b)
 
