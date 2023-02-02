@@ -26,9 +26,13 @@ testProjectName = 'te'
 
 binLi = [
     'drops --debug host add default example.com 3003 -k ~/.ssh/id_ed25519',
+    'drops --debug host ls',
+    'drops --debug host change default example.com 3003 -k ~/.ssh/id_ed25519',
+    'drops --debug host drop default',
+    'drops --debug host add default example.com 3003 -k ~/.ssh/id_ed25519',
     'drops --debug initDebianEnv',
     'drops --debug project name drops',
-    'drops --debug sync  -a default',
+    'drops --debug sync -a default -f',
     'drops --debug sync volumes --hostAlias default',
     'drops --debug sync var',
     'drops --debug deploy',

@@ -22,8 +22,8 @@ from . import config
 
 def host_cmd(a):
     if a.cmd == 'add' or a.cmd == 'change':
-        if a.host == None:
-            raise er.ArgsError('the following arguments are required:', 'host')
+        if a.hostAlias == None:
+            raise er.ArgsError('至少需要传入 hostAlias 参数')
         c = {'host': a.host, 'port': a.port,
              'username': a.username, 'coding': a.coding, 'hostAlias': a.hostAlias}
         if a.password is not None:
@@ -31,16 +31,16 @@ def host_cmd(a):
         elif a.key is not None:
             c['key'] = a.key
         else:
-            raise er.ArgsError('password and key must write one.')
+            raise er.ArgsError('密码或者 key 至少要传入一个。')
         if a.cmd == 'change':
             config.Conf().change_host(**c)
         else:
             config.Conf().add_host(**c)
 
     elif a.cmd == 'drop':
-        if a.host == None:
-            raise er.ArgsError('the following arguments are required:', 'host')
-        config.Conf().drop_host(host=a.hostAlias)
+        if a.hostAlias == None:
+            raise er.ArgsError('至少需要传入 hostAlias 参数')
+        config.Conf().drop_host(a.hostAlias)
     elif a.cmd == 'ls':
         config.Conf().ls()
     else:
@@ -52,7 +52,7 @@ def add_host_cmd(s):
         'host', help='管理 drops 部署主机。因为密码是明文存储的，强烈建议用 key 做验证。')
     p.add_argument('cmd', type=str, choices=[
                    'ls', 'add', 'drop', 'change'], nargs='?', help="default ls")
-    p.add_argument("hostAlias", metavar="test",
+    p.add_argument("hostAlias", metavar="default",
                    type=str, help="host 类型，比方说 default、test、dev、online。default 是关键字，所有命令不指定 --hostAlias 的话默认对 default 进行操作。")
     p.add_argument("host", metavar="ssh.example.com",
                    type=str, help="host.", default=None, nargs='?')

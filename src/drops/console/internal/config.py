@@ -134,24 +134,23 @@ class Conf():
                 break
         return s + ind * ' '
 
-    def print_host(self, n, host, head=''):
-        print(head, n)
-        for k, i in host.items():
+    def print_host(self, name, hostinfo, head=''):
+        print(head + name + ':')
+        for k, i in hostinfo.items():
             p = self.print_minlength(k, 12)
             if k == 'password':
-                print(head, '    ', p, ' *')
+                print(head + '  ' + p, ' *')
             else:
-                print(head, '    ', p, i)
+                print(head + '  ' + p, i)
 
-    def print_hosts(self, n, hs, head=''):
-        print(head, n)
-        for h, item in hs.items():
-            self.print_host(h, item, head+'    ')
+    def print_hosts(self, hosts, head=''):
+        print(head + 'hosts:')
+        for h, item in hosts.items():
+            self.print_host(h, item, head+'  ')
 
     def ls(self, host=None):
         # 输出 host
         self.open()
-
         if host is None:
             self.print_hosts(self.C['hosts'])
             return self
