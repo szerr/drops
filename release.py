@@ -16,4 +16,10 @@ with open('pyproject.toml.template') as fd:
 with open('pyproject.toml', 'w') as fd:
     fd.write(tm)
 
+b = "git add pyproject.toml && git commit -m %s && git push" % version
+print(b)
+s = os.system(b)
+if s != 0:
+    raise Exception("cmd run error, code:", s)
+
 os.system("gh release create " + version)
