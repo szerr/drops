@@ -100,6 +100,8 @@ class Conf():
         # 增加 主机配置。coding 为服务器 shell 编码
         self.open()
         h = Host(host, port, username, password, key, coding)
+        if hostAlias in self.C['hosts']:
+            raise er.ArgsError('hostAlias:', hostAlias, '已存在')
         self.C['hosts'][hostAlias] = h.to_conf()
         self.save()
         return self
@@ -112,7 +114,7 @@ class Conf():
         self.save()
         return self
 
-    def drop_host(self, hostAlias):
+    def remove_host(self, hostAlias):
         # 移除 host
         self.open()
         if hostAlias in self.C['hosts']:
