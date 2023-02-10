@@ -23,3 +23,4 @@ if s != 0:
     raise Exception("cmd run error, code:", s)
 
 os.system("gh release create " + version)
+os.system("git pull")
