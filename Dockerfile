@@ -1,10 +1,10 @@
-FROM debian:bullseye
+FROM alpine:3.16
 
-RUN apt-get update && apt-get install ssh rsync python3-pip cron -y && apt-get clean  && pip3 install paramiko>=5.3 pyyaml>=2.12
+RUN apk add --no-cache -U rsync openssh-client mariadb-client coreutils xz python3  py3-pip && pip3 install paramiko pyyaml
 
 COPY ./src/drops  /usr/lib/drops/drops
 COPY ./src/drops/drops.py  /usr/bin/drops
 
 ENV PYTHONPATH=/usr/lib/drops/
 
-CMD cron -f
+CMD crond -f -d 8

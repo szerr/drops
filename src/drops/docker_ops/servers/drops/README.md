@@ -1,2 +1,2 @@
 我平时备份和定制放在一起的，后来改用 drops 备份之后索性搞成了一个。
-注意与 alpine 不同， debian 的 run-parts 不执行带'.'的文件，脚本不能有扩展名。
+`debian` 的 `run-parts` 不能执行文件名有 `.` 的文件，不能执行 `python` 脚本，不能打印 `log`。我认为行为不够透明，换回 `alpine`
