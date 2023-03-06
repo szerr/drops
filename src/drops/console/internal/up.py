@@ -28,7 +28,7 @@ def add_up_cmd(s):
 
 def up_cmd(p):
     host = internal.get_arg_host_from_conf(p)
-    b = 'up -d '
+    b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
     return internal.docker_compose_cmd(b, host)
