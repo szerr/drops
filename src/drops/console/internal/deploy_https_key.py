@@ -36,4 +36,5 @@ def deploy_https_key_cmd(p):
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
     internal.docker_compose_cmd('restart acme.sh', host)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
+    print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
     return internal.docker_compose_cmd(b, host)
