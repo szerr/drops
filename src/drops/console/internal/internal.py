@@ -78,14 +78,14 @@ def ssh_template_pwd(password, port, username, host, b=''):
 def rsync2remotely(host, src, target):
     # rsync 本地同步到远程路径
     if host.key:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
         echo_b = b.format(
             src=src, target=target, key_path='<key_path>', port=host.port, username=host.username, host=host.host)
         b = b.format(
             src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
     else:
         detection_cmd('sshpass')
-        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
         echo_b = b.format(
             src=src, target=target, password='<password>', port=host.port, username=host.username, host=host.host)
         b = b.format(
