@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   nginx:
-    image: nginx:1.22
+    image: nginx:stable-bullseye
     restart: on-failure
     volumes:
       - ./volumes/nginx/ssl:/etc/nginx/ssl
