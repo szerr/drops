@@ -21,7 +21,7 @@ from . import er
 
 def add_deploy_https_key_cmd(s):
     p = s.add_parser(
-        'deployHttpsKey', help='申请并部署 https 证书。')
+        'deployHttpsKey', help='申请并部署 https 证书，基于 acme.sh。')
     internal.add_arg_host(p)
     p.add_argument("-f", '--force',
                    help="重新申请证书。", default=False, action='store_true')
