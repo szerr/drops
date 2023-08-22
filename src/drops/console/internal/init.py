@@ -46,4 +46,4 @@ def new_init(p):
             shutil.copyfile(s, t)
 
     c = Conf()
-    c.setProjectName(p.projectName)
+    c.set_project_name(p.projectName)

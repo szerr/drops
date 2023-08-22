@@ -34,12 +34,12 @@ def work_path():
 
 def volumes_path():
     # volumes路径
-    return '/srv/drops/%s/volumes/' % config.Conf().getProjectName()
+    return '/srv/drops/%s/volumes/' % config.Conf().get_project_name()
 
 
 def container_path():
     # 容器路径
-    return '/srv/drops/%s/' % config.Conf().getProjectName()
+    return '/srv/drops/%s/' % config.Conf().get_project_name()
 
 
 def servers_path():
@@ -152,12 +152,12 @@ def add_arg_force(p):
 
 
 def add_arg_host(p):
-    p.add_argument('-a', '--hostAlias',
+    p.add_argument('-a', '--host-alias',
                    help="要执行操作的主机别名。", type=str, default='default')
 
 
 def get_arg_host_from_conf(p):
-    return config.Conf().get_host(p.hostAlias)
+    return config.Conf().get_host(p.host-alias)
 
 
 def parse_args(p):
@@ -261,7 +261,7 @@ def backup(host, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', kee
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
-        backup2dir = os.path.join(backup2dir, config.Conf().getProjectName())
+        backup2dir = os.path.join(backup2dir, config.Conf().get_project_name())
     # 如果设定了时间格式
     if time_format:
         # 备份目录是备份对象下的时间目录

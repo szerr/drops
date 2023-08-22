@@ -15,39 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
-from .clean_up import *
-from .undeploy import *
+from .cmd import *
+from .globals import *
 
-from .deploy import *
-from .init_remove_env_debian import *
-from .internal import *
-from .new import *
-from .nginx_force_reload import *
-from .nginx_reload import *
-from .ps import *
-from .redeploy import *
-from .sync import *
-from .init import *
-from .host import *
-from .stop import *
-from .rm import *
-from .kill import *
-from .up import *
-from .start import *
-from .restart import *
-from .project import *
-from .echo_paths import *
-from .pull import *
-from .deploy_https_key import *
-from .logs import *
-from .exec import *
-from .backup import *
-
-
-def initCmd(s):
-    add_clean_up_cmd(s)
-    add_undeploy_cmd(s)
-
+def initCmd(p, s):
+    # 在全局参数中汇总远程信息，接下来生成本次执行的环境配置。
+    p.add_argument('-H', '--host',
+        help="Connect to host via ssh. By default, execute in the current local directory.", default=False, action='store_true')
+    p.add_argument('-p', '--port',
+        help="SSH port, default 22.", default='22', action='store_true')
+    p.add_argument('-u', '--username',
+        help="User for login, default root.", default='root', action='store_true')
+    p.add_argument('-i', '--identity-file',
+        help='Identity file. default: "./secrets/id_*" or "~/.ssh/id_*".', default=False, action='store_true')
+    p.add_argument('-P', '--password',
+        help="Login password. identity file is recommended for authentication.", default=False, action='store_true')
+    p.add_argument('-e', '--env',
+        help="Specify the deployment environment. Configured in drops.yaml.", default='drops.yaml', action='store_true')
+    p.add_argument('-E', '--encoding',
+        help="The encoding of the remote server, default utf-8.", default='utf-8', action='store_true')
+    p.add_argument('-d', '--deploy-path',
+        help="The deployment path on the remote server. Local deployment does not work.", default=False, action='store_true')
+    p.add_argument('-c', '--config',
+        help="Specify an alternate config file. default: drops.yaml.", default='drops.yaml', action='store_true')
+    
+    # 初始化各个命令和参数
     add_new_cmd(s)
     add_ps_cmd(s)
     add_init_cmd(s)
@@ -67,7 +59,10 @@ def initCmd(s):
     add_project_cmd(s)
     add_echo_paths_cmd(s)
     add_pull_cmd(s)
-    add_deploy_https_key_cmd(s)
+    add_deploy_https_cert_cmd(s)
     add_logs_cmd(s)
     add_exec_cmd(s)
     add_backup_cmd(s)
+
+def initHost():
+    pass

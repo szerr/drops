@@ -49,7 +49,7 @@ class UserCancel(DropsErr):
 
 class ConfigFileAlreadyExists(DropsErr):
     def __str__(self):
-        return '%s already exists.' % globals.confFileName
+        return '%s already exists.' % globals.config_file
 
 
 class PwdAndKeyCannotBeEmpty(DropsErr):
@@ -85,7 +85,11 @@ class ConfigurationFileFormatError(DropsErr):
     def __str__(self):
         return 'Configuration file format error.'
 
-class HostDoesNotExist(DropsErr):
+class ConfigurationFileMissObj(DropsErr):
+    def __str__(self):
+        return 'The configuration file is missing %s.'% self.args[0]
+
+class EnvDoesNotExist(DropsErr):
     def __str__(self):
         return 'Host %s does not exist' % self.args[0]
 
@@ -98,3 +102,8 @@ class CmdCannotContain(DropsErr):
 class CmdExecutionError(DropsErr):
     def __str__(self):
         return 'Command execution error: "%s".' % self.args[0]
+
+# 不能同时设置 env 和 host
+class EnvHostSimult(DropsErr):
+    def __str__(self):
+        return 'Cannot set env(-e) and host(-H) simultaneously.'

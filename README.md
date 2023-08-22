@@ -13,12 +13,11 @@ drops 是基于 ssh 和 docker-compose 的运维模板。
 
 [数据管理](#数据管理)
 
-[drops命令](#drops命令)
+[drops 命令](#drops命令)
 
 [包含的示例](#包含的示例)
 
 [注意事项](#注意事项)
-
 
 ## 快速入门
 
@@ -27,11 +26,11 @@ drops 是基于 ssh 和 docker-compose 的运维模板。
 1. 安装 rsync 和 ssh 客户端
 2. 安装 drops：
 
-``` sh
+```sh
 pip install --upgrade drops
 ```
 
-*注：pip 是 python 的包管理器，视系统可能需要手动安装，像是 apt install python3-pip。*
+_注：pip 是 python 的包管理器，视系统可能需要手动安装，像是 apt install python3-pip。_
 
 ### 初始化项目
 
@@ -46,12 +45,15 @@ cd example
 drops host add default ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个测试服务器。
 drops init_env_debian # debian 系这样初始化远程环境
 ```
+
 如果配置出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
-centos 配置很复杂，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest>  下载安装 docker-compose。
-podman-compose 目前（2022年12月）还是有一些问题，会造成 drops 部署部分不能用。
+centos 配置很复杂，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest> 下载安装 docker-compose。
+podman-compose 目前（2022 年 12 月）还是有一些问题，会造成 drops 部署部分不能用。
 
 ### 部署示例服务
+
 默认会启动一个 nginx 容器。
+
 ```sh
 drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动容器。
 ```
@@ -90,11 +92,11 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 参照 `servers/crond/periodic_example/backup.sh` 快速搭建异地增量备份。
 
-一个系统可以部署到多台机器，其中机器可以分为：线上，测试1，测试2，bulabula。。。。
+一个系统可以部署到多台机器，其中机器可以分为：线上，测试 1，测试 2，bulabula。。。。
 
 `drops host` 可以管理多台机器。可以试试 `drops ls` 输出目前的 `group` 和 `host`
 
-`drops` 没有指定 `-a\--hostAlias` 参数的时候，默认对 `default`  下所有机器做操作。所以可以当作单机部署工具用。
+`drops` 没有指定 `-a\--host-alias` 参数的时候，默认对 `default` 下所有机器做操作。所以可以当作单机部署工具用。
 
 ## 与项目集成
 
@@ -112,8 +114,6 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 默认`git`会排除`releace`，这种情况建议从`.gitignore`删除`releace`，并将其纳入版本控制。每个项目写一个 build 脚本，将输出指向`releace.<projectName>`。
 
-
-
 ## 数据管理
 
 将项目分成运行时可变和不可变的
@@ -129,31 +129,31 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 ## drops 命令
 
-| drops 命令         | 功能                                                         |
-| ------------------ | ------------------------------------------------------------ |
-| `new dirname <projectname>` | 创建一个`drops`项目。                                        |
-| `init`             | 在当前目录初始化一个 `drops` 项目。                          |
-| `host`             | 管理服务器连结配置。                                         |
-| `deploy`           | 同步后启动容器。                                             |
-| `redeploy`         | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
-| `sync`             | 同步项目到服务器。                                           |
-| `backup` | 备份远程目录到本地。如 `drops backup -d %Y-%m-%d_%H:%M:%S` |
-| `ps`               | 查看当前运行的容器。                                         |
-| `start`            | 启动容器。                                                   |
-| `up`               | 创建和启动容器。                                             |
-| `restart`          | 重启容器。                                                   |
-| `stop`             | 停止容器。                                                   |
-| `kill`             | 杀掉容器。                                                   |
-| `rm`               | 删除容器。                                                   |
-| `logs` | 输出容器日志。-f 持续输出。 |
-| `exec container cmd` | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。 |
-| `nginxReload`      | 重载`nginx`配置，但不会更新证书。   |
-| `nginxForceReload` | 重载`nginx`配置，会更新证书。 |
-| `deployHttpsKey` | 申请并部署 `https` 证书。 |
-| `initDebianEnv`    | 初始化远程服务器环境`Debian`系用。                           |
-| `undeploy`         | 清理掉服务器上的项目和容器。                                 |
-| `clean`            | 删除当前项目下 `drops` 相关的文件。                          |
-| `drops project name` | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`的路径。 |
+| drops 命令                  | 功能                                                             |
+| --------------------------- | ---------------------------------------------------------------- |
+| `new dirname <projectname>` | 创建一个`drops`项目。                                            |
+| `init`                      | 在当前目录初始化一个 `drops` 项目。                              |
+| `host`                      | 管理服务器连结配置。                                             |
+| `deploy`                    | 同步后启动容器。                                                 |
+| `redeploy`                  | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。     |
+| `sync`                      | 同步项目到服务器。                                               |
+| `backup`                    | 备份远程目录到本地。如 `drops backup -d %Y-%m-%d_%H:%M:%S`       |
+| `ps`                        | 查看当前运行的容器。                                             |
+| `start`                     | 启动容器。                                                       |
+| `up`                        | 创建和启动容器。                                                 |
+| `restart`                   | 重启容器。                                                       |
+| `stop`                      | 停止容器。                                                       |
+| `kill`                      | 杀掉容器。                                                       |
+| `rm`                        | 删除容器。                                                       |
+| `logs`                      | 输出容器日志。-f 持续输出。                                      |
+| `exec container cmd`        | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。      |
+| `nginxReload`               | 重载`nginx`配置，但不会更新证书。                                |
+| `nginxForceReload`          | 重载`nginx`配置，会更新证书。                                    |
+| `deployHttpsKey`            | 申请并部署 `https` 证书。                                        |
+| `initDebianEnv`             | 初始化远程服务器环境`Debian`系用。                               |
+| `undeploy`                  | 清理掉服务器上的项目和容器。                                     |
+| `clean`                     | 删除当前项目下 `drops` 相关的文件。                              |
+| `drops project name`        | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`的路径。 |
 
 `--help` 查看更多帮助。
 `start`、`up`、`restart`、`stop`、`kill`、`rm` 默认对所有容器操作，可以用 -s 指定一个容器。
@@ -169,15 +169,12 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 `servers/crond/periodic_example/backup.sh` 是一个异地备份脚本。
 
-
-
 ## 注意事项
+
 drops 的功能还在测试开发阶段，我认为可靠时会发 v1 版。版本号第二位变动时说明命令行界面有比较大的变化。
 核心理念是不变的，drops 只是这个理念的工具。
 使用过程中遇到任何问题或建议请发 issue 给我，我会尽快解决。
 为了实现备份，同步，部署相关功能，执行的 `rsync` 命令 会带有 `--del` 参数，会删除不匹配的文件，保持文件夹内文件相同，**删除前不一定有提示**。我会在可能有风险的地方加提示，也会做相应测试。也请各位在使用时多加小心并承担相应风险。用测试确定流程，保障逻辑准确；用冗余，备份和快照防止数据丢失。
-
-
 
 ## 致谢
 

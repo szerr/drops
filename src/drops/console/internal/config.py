@@ -22,107 +22,76 @@ import os
 from . import globals
 from . import er
 
-
-class Host():
-    def __init__(self, host, port, username, password=None, key=None, coding='utf-8'):
+class Environment():
+    def __init__(self, host, port, username, identity_file, password, env, encoding, deploy_path, config):
         self.host = host
         self.port = port
         self.username = username
+        self.identity_file = identity_file
         self.password = password
-        self.key = key
-        self.coding = coding
-
-    def __dict__(self):
-        return {'host': self.host, 'port': self.port,
-                'username': self.username, 'password': self.password,
-                'key': self.key, 'coding': self.coding}
-
+        self.env = env
+        self.encoding = encoding
+        self.deploy_path = deploy_path
+        self.config = config
     def to_conf(self):
-        t = {'host': self.host, 'port': self.port,
-             'username': self.username, 'coding': self.coding}
-        if self.password:
-            t['password'] = self.password
-        elif self.key:
-            t['key'] = self.key
-        else:
-            raise er.PwdAndKeyCannotBeEmpty
-        return t
-
+        return {'host':self.host,
+            'port':self.port,
+            'username':self.username,
+            'identity_file':self.identity_file,
+            'password':self.password,
+            'encoding':self.encoding,
+            'deploy_path':self.deploy_path,
+            'config':self.config}
 
 class Conf():
     # 封装配置文件
     def __init__(self):
-        self.C = None
+        pass
 
-    def open(self):
-        if self.C == None:
-            if not os.path.isfile(globals.confFileName):
-                raise er.ThisIsNotDropsProject
-            with open(globals.confFileName) as fd:
-                self.C = yaml.load(fd.read(), Loader=yaml.Loader)
-            if type(self.C) is not dict:
-                raise er.ConfigurationFileFormatError
-            if self.C.get('hosts', None) == None:
-                self.C['hosts'] = {}
-            return self
+    def open(self, path):
+        self.path = path
+        with open(path) as fd:
+            c = yaml.load(fd.read(), Loader=yaml.Loader)
+        if 'project' not  in c:
+            raise er.ConfigurationFileMissObj('project')
+        if 'name' not in c['project']:
+            raise er.ConfigurationFileMissObj('project.name')
+        if 'env' not in c:
+            c['env'] = {}
+        self._data = c
+        return self
 
-    def setProjectName(self, n):
+    # 方便获取配置对象
+    def __getattr__(self, name):
+        if name == 'env':
+            return {k:Environment(i) for k, i in  self._data['env'].items()}
+        return self._data[name].copy()
+
+    def set_project_name(self, n):
         self.open()
         # 设置项目名
-        p = self.C.get('project', {})
+        p = self._data.get('project', {})
         p['name'] = n
-        self.C['project'] = p
+        self._data['project'] = p
         self.save()
         return self
 
-    def getProjectName(self):
-        self.open()
-        # TODO 0.1.6 之前项目名用的文件夹名，做个兼容。
-        if 'project' not in self.C:
-            n = os.path.split(os.getcwd())[-1]
-            self.setProjectName(n)
-            self.save()
-        return self.C['project']['name']
-
     def save(self):
-        with open(globals.confFileName, 'w') as fd:
-            fd.write(yaml.dump(self.C))
+        with open(globals.config_file, 'w') as fd:
+            fd.write(yaml.dump(self._data))
         return self
 
     def new(self):
-        if os.path.isfile(globals.confFileName):
+        if os.path.isfile(globals.config_file):
             raise er.ConfigFileAlreadyExists
-        self.C = {'hosts': {}}
+        self._data = {'env': {}}
         self.save()
         return self
 
-    def add_host(self, hostAlias, host, port=22, username='root', password=None, key=None, coding='utf-8'):
-        # 增加 主机配置。coding 为服务器 shell 编码
-        self.open()
-        h = Host(host, port, username, password, key, coding)
-        if hostAlias in self.C['hosts']:
-            raise er.ArgsError('hostAlias:', hostAlias, '已存在')
-        self.C['hosts'][hostAlias] = h.to_conf()
-        self.save()
-        return self
-
-    def change_host(self, hostAlias, host, port=22, username='root', password=None, key=None, coding='utf-8'):
-        # 修改 host
-        self.open()
-        h = Host(host, port, username, password, key, coding)
-        self.C['hosts'][hostAlias] = h.to_conf()
-        self.save()
-        return self
-
-    def remove_host(self, hostAlias):
-        # 移除 host
-        self.open()
-        if hostAlias in self.C['hosts']:
-            self.C['hosts'].pop(hostAlias)
-        else:
-            raise er.HostDoesNotExist(hostAlias)
-        self.save()
-        return self
+    def set_env(self, name, env:Environment):
+        self._data['env'][name] = env.to_conf()
+    def remove_env(self, name):
+        del(self._data['env'][name])
 
     def print_minlength(self, s, length):
         # 最小打印长度
@@ -145,24 +114,24 @@ class Conf():
             else:
                 print(head + '  ' + p, i)
 
-    def print_hosts(self, hosts, head=''):
-        print(head + 'hosts:')
-        for h, item in hosts.items():
+    def print_env(self, env, head=''):
+        print(head + 'env:')
+        for h, item in env.items():
             self.print_host(h, item, head+'  ')
 
     def ls(self, host=None):
         # 输出 host
         self.open()
         if host is None:
-            self.print_hosts(self.C['hosts'])
+            self.print_env(self._data['env'])
             return self
 
-        self.print_host(host, self.C['hosts'][host])
+        self.print_host(host, self._data['env'][host])
         return self
 
-    def get_host(self, host_type):
-        # 获取单个 host
+    def get_env(self, name) -> Environment:
+        # 获取单个 env
         self.open()
-        if host_type in self.C['hosts']:
-            return Host(**self.C['hosts'][host_type])
-        raise er.HostDoesNotExist(host_type)
+        if name in self._data['env']:
+            return Environment(**self._data['env'][name])
+        raise er.EnvDoesNotExist(name)

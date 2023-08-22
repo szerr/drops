@@ -16,4 +16,21 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 
-confFileName = 'drops.yaml'
+# import logging
+# log = logging.getLogger('drops')
+# log.setLevel(logging.DEBUG)
+
+# ch = logging.StreamHandler()
+# formatter = logging.Formatter('%(levelname)s: %(message)s')
+# ch.setFormatter(formatter)
+# log.addHandler(ch)
+
+# log.debug('debug message')
+# log.info('info message')
+# log.warning('warn message')
+# log.error('error message')
+# log.critical('critical message')
+
+from . import ssh
+
+ssh_client = None
