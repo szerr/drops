@@ -15,7 +15,7 @@ services:
       - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./servers/nginx/lib:/etc/nginx/lib:ro
       # 项目文件映射
-      - ./release/html:/var/www/html:ro
+      - ./release/web:/var/www/html:ro
     labels:
       # acme.sh 部署证书要用的标签
       - sh.acme.autoload.domain=drops
