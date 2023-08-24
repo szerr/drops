@@ -24,6 +24,7 @@ from . import config
 from . import internal
 from . import er
 from . import globa
+from . import log
 
 def add_new_cmd(s):
     p = s.add_parser(
@@ -134,14 +135,14 @@ def exec_cmd(p):
     internal.exec(internal.docker_cmd_template(
         "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env)
 
-def add_host_cmd(s):
+def add_env_cmd(s):
     p = s.add_parser(
-        'env', help='管理 drops 部署的环境连接配置。因为密码是明文存储的，强烈建议用 key 做验证。')
+        'env', help='管理 drops 部署的环境连接配置。因为密码是明文存储的，建议用 key 做验证。')
     p.add_argument('cmd', type=str, choices=[
                    'ls', 'add', 'remove', 'change'], nargs='?', help="default ls")
-    p.set_defaults(func=host_cmd)
+    p.set_defaults(func=env_cmd)
 
-def host_cmd(a):
+def env_cmd(a):
     c = config.Conf().open()
     if a.cmd == 'add' or a.cmd == 'change':
         internal.check_env_arg()
@@ -214,7 +215,7 @@ def new_cmd(arg):
                     os.path.join(os.getcwd(), arg.projectName))
     os.chdir(arg.projectName)
     config.Conf().new('drops.yaml', arg.projectName)
-    
+
 def add_kill_cmd(s):
     p = s.add_parser(
         'kill', help='杀掉容器。')
@@ -422,8 +423,45 @@ def up_cmd(p):
         b += ' ' + ' '.join(p.container)
     return internal.docker_compose_cmd(b, env)
 
-# debug 模式下可用的命令：
+def add_build_cmd(s):
+    p = s.add_parser(
+        'build', help='执行所有项目的 script/build 脚本，优先级：py > sh > bat')
+    p.add_argument("-p", '--project',
+        help="指定一个或多个项目.", default=[], nargs='*', type=str)
+    p.add_argument("-o", '--output',
+        help="输出路径，每个项目创建一个文件夹。作为 -o 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
+    internal.add_arg_container(p)
+    p.set_defaults(func=build_cmd)
 
+def build_cmd(p):
+    pli = p.project
+    if not pli:
+        pli = os.listdir('src/')
+    cwd = os.getcwd()
+    for p_path in pli:
+        print('--- build', p_path, '---')
+        script_path = os.path.join('src', p_path, 'script')
+        output_path = os.path.join(p.output, p_path)
+        if not os.path.isdir(script_path):
+            log.warning("There is no script for project", p_path)
+            continue
+
+        for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
+            f = 'build.'+e
+            log.debug('test', b, f)
+            if os.path.isfile(os.path.join(script_path, f)) and internal.command_exists(b):
+                os.chdir(script_path)
+                if not os.path.isdir(output_path):
+                    os.makedirs(output_path)
+                bin = b + ' ' + f + ' -o ' + output_path
+                log.debug('run>', b + ' ' + f + ' -o ' + output_path)
+                os.system(bin)
+                os.chdir(cwd)
+                break
+        else:
+            log.warning("No supported build script found.")
+
+# debug 模式下可用的命令：
 def add_clean_up_cmd(s):
     p = s.add_parser(
         'clean', help='删除当前目录下 drops 所有相关文件。')

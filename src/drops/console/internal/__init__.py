@@ -17,6 +17,7 @@
 
 from .cmd import *
 from .globa import *
+from . import cmd
 import sys
 
 def initCmd(p, s):
@@ -41,29 +42,9 @@ def initCmd(p, s):
         help="Specify an alternate config file. default: drops.yaml.", default='drops.yaml', nargs='?', type=str)
     
     # 初始化各个命令和参数
-    add_new_cmd(s)
-    add_ps_cmd(s)
-    add_init_cmd(s)
-    add_host_cmd(s)
-    add_sync_cmd(s)
-    add_deploy_cmd(s)
-    add_redeploy_cmd(s)
-    add_init_env_debian_cmd(s)
-    add_nginx_reload_cmd(s)
-    add_nginx_force_reload_cmd(s)
-    add_stop_cmd(s)
-    add_rm_cmd(s)
-    add_kill_cmd(s)
-    add_up_cmd(s)
-    add_start_cmd(s)
-    add_restart_cmd(s)
-    add_project_cmd(s)
-    add_echo_paths_cmd(s)
-    add_pull_cmd(s)
-    add_deploy_https_cert_cmd(s)
-    add_logs_cmd(s)
-    add_exec_cmd(s)
-    add_backup_cmd(s)
+    for i in dir(cmd):
+        if i.startswith('add_') and i.endswith('_cmd'):
+            getattr(cmd, i)(s)
 
     # 非 debug 模式禁用
     if '--debug' in sys.argv:

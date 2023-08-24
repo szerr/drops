@@ -29,23 +29,12 @@ def main():
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--debug',
                         help="启动 debug 模式。", default=False, action='store_true')
-    subparsers = parser.add_subparsers()
+    # metavar 设置空字符串，为了不以  {cmd1, cmd2, ..} 的形式显示可用子命令。
+    subparsers = parser.add_subparsers(metavar="")
     # 初始化命令行参数
     internal.initCmd(parser, subparsers)
     # 解析参数
     args = parser.parse_args()
-
-    # python3 main.py -H example.com -p 1 -u r -i ~/.ssh/id_ed25519 -P 1 -e production -E utf-8 -d /srv/drops -c drops.yaml
-    # print('host', args.host)
-    # print('port', args.port)
-    # print('username', args.username)
-    # print('identity_file', args.identity_file)
-    # print('password', args.password)
-    # print('env', args.env)
-    # print('encoding', args.encoding)
-    # print('deploy_path', args.deploy_path)
-    # print('config', args.config)
-
     internal.globa.args = args
 
     # 调用相关命令，没有命令时打印 help

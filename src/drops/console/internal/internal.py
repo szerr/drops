@@ -430,3 +430,10 @@ def confirm_empty_dir(env, path):
     if s == 0:
         return True
     return False
+
+def command_exists(b)->bool:
+    for cmdpath in os.environ['PATH'].split(':'):
+        if os.path.isdir(cmdpath) and b in os.listdir(cmdpath):
+            return True
+    return False
+        

@@ -50,11 +50,18 @@ binLi = [
     '-e production kill nginx',
     '-e production rm nginx -f',
     '-e production up',
+
+    # build 相关
+    '-e production build server',
+    '-e production build',
+    '-e production sync',
+    '-e production restart',
+
     '-e production restart nginx',
     '-e production stop',
     '-e production rm -f',
     '-e production backup all -d %Y-%m-%d_%H:%M:%S -k 1',
-    '-e production undeploy -f',
+    # '-e production undeploy -f',
     # 本地部署
     'up',
     'ps',
