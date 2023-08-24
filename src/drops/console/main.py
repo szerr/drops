@@ -20,8 +20,6 @@
 import argparse
 import sys
 
-from . import internal
-
 desc = '''drops 是基于 ssh 和 docker-compose 的运维模板，附带的 drops 命令可以方便的管理项目，部署服务。'''
 
 # 是否打印异常跟踪
