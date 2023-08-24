@@ -20,9 +20,9 @@ import os
 
 # 避免出现 "ImportError: attempted relative import with no known parent package"。
 try:
-    from . import globals
+    from . import globa
 except:
-    import globals
+    import drops.console.internal.globa as globa
 
 # self.args 是类接收到的所有参数。这样写只是为了少些两行代码，忽视可维护和语法检查。
 
@@ -49,7 +49,7 @@ class UserCancel(DropsErr):
 
 class ConfigFileAlreadyExists(DropsErr):
     def __str__(self):
-        return '%s already exists.' % globals.config_file
+        return '%s already exists.' % globa.config_file
 
 
 class PwdAndKeyCannotBeEmpty(DropsErr):
@@ -107,3 +107,7 @@ class CmdExecutionError(DropsErr):
 class EnvHostSimult(DropsErr):
     def __str__(self):
         return 'Cannot set env(-e) and host(-H) simultaneously.'
+
+class EnvParameterRequired(DropsErr):
+    def __str__(self) -> str:
+        return 'The env(-e, --env) parameter is required.'

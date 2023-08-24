@@ -22,6 +22,8 @@ import shutil
 import drops
 from . import config
 from . import internal
+from . import er
+from . import globa
 
 def add_new_cmd(s):
     p = s.add_parser(
@@ -50,7 +52,6 @@ def new_cmd(arg):
 def add_backup_cmd(s):
     p = s.add_parser(
         'backup', help='基于 rsync --del --link-dest 的增量备份。更改参数前先测试，以免写错删掉已有的备份文件。')
-    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=backup_cmd)
     p.add_argument('obj', type=str, default='volumes', choices=[
@@ -69,43 +70,43 @@ def add_backup_cmd(s):
 
 
 def backup_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    internal.check_env_arg()
+    env = internal.config.Conf().gen_env_by_arg()
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(host,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
+    return internal.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(
         'deploy-https-cert', help='申请并部署 https 证书，基于 acme.sh。')
-    internal.add_arg_host(p)
     p.add_argument("-f", '--force',
                    help="重新申请证书。", default=False, action='store_true')
     p.set_defaults(func=deploy_https_cert_cmd)
 
 
 def deploy_https_cert_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
-    internal.docker_compose_cmd('restart acme.sh', host)
+    internal.docker_compose_cmd('restart acme.sh', env)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
     print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 def add_deploy_cmd(s):
     p = s.add_parser(
         'deploy', help='部署并启动服务。')
-    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=deploy_cmd)
 
 
 def deploy_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    internal.sync(host, p.force)
-    return internal.docker_compose_cmd("up -d", host)
+    internal.check_env_arg()
+    env = internal.config.Conf().gen_env_by_arg()
+    internal.sync(env, p.force)
+    return internal.docker_compose_cmd("up -d", env)
 
 def add_echo_paths_cmd(s):
     p = s.add_parser(
@@ -123,78 +124,52 @@ def add_exec_cmd(s):
         'exec', help='在任意容器中执行命令。')
     p.add_argument("container", metavar="container",
                    type=str, help="容器名")
-    internal.add_arg_host(p)
     p.add_argument('cmds',
                    help="要执行的命令。", type=str, nargs='+')
     p.set_defaults(func=exec_cmd)
 
 
 def exec_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     internal.exec(internal.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), host)
+        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env)
+
+def add_host_cmd(s):
+    p = s.add_parser(
+        'env', help='管理 drops 部署的环境连接配置。因为密码是明文存储的，强烈建议用 key 做验证。')
+    p.add_argument('cmd', type=str, choices=[
+                   'ls', 'add', 'remove', 'change'], nargs='?', help="default ls")
+    p.set_defaults(func=host_cmd)
 
 def host_cmd(a):
+    c = config.Conf().open()
     if a.cmd == 'add' or a.cmd == 'change':
-        if a.host_alias == None:
-            raise er.ArgsError('至少需要传入 host-alias 参数')
-        if a.host == None:
-            raise er.ArgsError('至少需要传入 host 参数')
-        c = {'host': a.host, 'port': a.port,
-             'username': a.username, 'coding': a.coding, 'host-alias': a.host_alias}
-        if a.password is not None:
-            c['password'] = a.password
-        elif a.key is not None:
-            c['key'] = a.key
-        else:
-            raise er.ArgsError('密码或者 key 至少要传入一个。')
-        if a.cmd == 'change':
-            config.Conf().change_host(**c)
-        else:
-            config.Conf().add_host(**c)
-
+        internal.check_env_arg()
+        if a.cmd == 'add':
+            if not globa.args.host:
+                raise er.ArgsError("The -H(--host) argument is required.")
+        env = config.gen_environment_by_arg(globa.args)
+        c.set_env(globa.args.env, env).save()
     elif a.cmd == 'remove':
-        if a.host_alias == None:
-            raise er.ArgsError('至少需要传入 host-alias 参数')
-        config.Conf().remove_host(a.host_alias)
+        internal.check_env_arg()
+        c.remove_env(globa.args.env).save()
     elif a.cmd == 'ls':
         config.Conf().ls()
     else:
         config.Conf().ls()
 
 
-def add_host_cmd(s):
-    p = s.add_parser(
-        'host', help='管理 drops 部署主机。因为密码是明文存储的，强烈建议用 key 做验证。')
-    p.add_argument('cmd', type=str, choices=[
-                   'ls', 'add', 'remove', 'change'], nargs='?', help="default ls")
-    p.add_argument("--host-alias", metavar="default",
-                   type=str, help="host 类型，比方说 default、test、dev、online。default 是关键字，所有命令不指定 --host-alias 的话默认对 default 进行操作。")
-    p.add_argument("host", metavar="ssh.example.com",
-                   type=str, help="host.", default=None, nargs='?')
-    p.add_argument("port", metavar="22",
-                   type=int, help="ssh port.", default=22, nargs='?')
-    p.add_argument("username", metavar="root",
-                   type=str, help="ssh username.", default='root', nargs='?')
-    p.add_argument('coding', metavar="coding",
-                   type=str, help="shell coding, default is utf-8.", default='utf-8', nargs='?')
-    p.add_argument("-p", '--password',
-                   type=str, help="ssh password. Note that the password is stored in plain text, and key verification is strongly recommended.", default=None)
-    p.add_argument("-k", '--key', metavar="~/.ssh/id_ed25519",
-                   type=str, help="ssh key path", default=None)
-    p.set_defaults(func=host_cmd)
-
 def add_init_env_debian_cmd(s):
     p = s.add_parser(
         'init-debian-env', help='初始化 debian 系远程环境。')
-    internal.add_arg_host(p)
     p.set_defaults(func=init_env_debian_cmd)
 
 
 def init_env_debian_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    internal.check_env_arg()
+    env = internal.config.Conf().gen_env_by_arg()
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    internal.exec(bin, host)
+    internal.exec(bin, env)
 
 def add_init_cmd(s):
     p = s.add_parser(
@@ -202,7 +177,6 @@ def add_init_cmd(s):
     p.set_defaults(func=new_init)
     p.add_argument("projectName", metavar="projectName",
                    type=str, help="项目名。", nargs='?')
-
 
 def new_init(p):
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
@@ -218,47 +192,11 @@ def new_init(p):
         else:
             shutil.copyfile(s, t)
 
-    c = Conf()
-    c.setProjectName(p.projectName)
-
-def add_kill_cmd(s):
-    p = s.add_parser(
-        'kill', help='杀掉容器。')
-    internal.add_arg_host(p)
-    internal.add_arg_container(p)
-    p.set_defaults(func=kill_cmd)
-
-
-def kill_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    b = 'kill'
-    if p.container:
-        b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
-
-def add_logs_cmd(s):
-    p = s.add_parser(
-        'logs', help='输出容器日志。')
-    p.add_argument("container", metavar="container",
-                   type=str, help="容器名")
-    p.add_argument("-f", '--follow',
-                   help="持续日志输出。", default=False, action='store_true')
-    internal.add_arg_host(p)
-    p.set_defaults(func=logs_cmd)
-
-
-def logs_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    b = 'logs '
-    if p.follow:
-        b += '-f '
-    return internal.docker_compose_cmd(b+p.container, host)
-
+    config.Conf().new(pwd, p.projectName)
 
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
-    p.add_argument("dirName",  type=str, help="目录名，如果没有项目名会作为默认项目名。")
     p.add_argument("projectName",  type=str,
                    help="项目名。", default='', nargs='?')
     p.set_defaults(func=new_cmd)
@@ -268,42 +206,67 @@ def new_cmd(arg):
     from . import config
     from . import internal
 
-    if arg.dirName in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dirName))
+    if arg.projectName in os.listdir(os.getcwd()):
+        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.projectName))
         return
     objPath = drops.__path__[0]
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), arg.dirName))
-    os.chdir(arg.dirName)
-    c = config.Conf().open()
-    if arg.projectName:
-        c.set_project_name(arg.projectName)
-    else:
-        c.set_project_name(arg.dirName)
-    c.save()
+                    os.path.join(os.getcwd(), arg.projectName))
+    os.chdir(arg.projectName)
+    config.Conf().new('drops.yaml', arg.projectName)
+    
+def add_kill_cmd(s):
+    p = s.add_parser(
+        'kill', help='杀掉容器。')
+    internal.add_arg_container(p)
+    p.set_defaults(func=kill_cmd)
+
+
+def kill_cmd(p):
+    env = internal.config.Conf().gen_env_by_arg()
+    b = 'kill'
+    if p.container:
+        b += ' ' + ' '.join(p.container)
+    return internal.docker_compose_cmd(b, env)
+
+def add_logs_cmd(s):
+    p = s.add_parser(
+        'logs', help='输出容器日志。')
+    p.add_argument("container", metavar="container",
+                   type=str, help="容器名")
+    p.add_argument("-f", '--follow',
+                   help="持续日志输出。", default=False, action='store_true')
+    p.set_defaults(func=logs_cmd)
+
+
+def logs_cmd(p):
+    env = internal.config.Conf().gen_env_by_arg()
+    b = 'logs '
+    if p.follow:
+        b += '-f '
+    return internal.docker_compose_cmd(b+p.container, env)
+
 
 def add_nginx_force_reload_cmd(s):
     p = s.add_parser(
         'nginx-force-reload', help="重载 nginx 配置，会重载证书。")
-    internal.add_arg_host(p)
     p.set_defaults(func=nginx_force_reload_cmd)
 
 
 def nginx_force_reload_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     internal.exec(internal.docker_cmd_template(
-        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), host)
+        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
 
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
         'nginx-reload', help='重载 nginx 配置，不会重载证书。')
-    internal.add_arg_host(p)
     p.set_defaults(func=nginx_reload_cmd)
 
 
 def nginx_reload_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', host)
+    env = internal.config.Conf().gen_env_by_arg()
+    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', env)
 
 def add_project_cmd(s):
     p = s.add_parser(
@@ -320,7 +283,7 @@ def project_cmd(p):
     c = config.Conf().open()
     if 'name' in p:
         if p.name == None:
-            print(c.get_project_name())
+            print(c.project_name())
         else:
             c.set_project_name(p.name)
     else:
@@ -330,70 +293,66 @@ def project_cmd(p):
 def add_ps_cmd(s):
     p = s.add_parser(
         'ps', help='输出正在运行的容器。')
-    internal.add_arg_host(p)
     p.set_defaults(func=ps_cmd)
 
 
 def ps_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    return internal.docker_compose_cmd("ps", host)
+    env = internal.config.Conf().gen_env_by_arg()
+    return internal.docker_compose_cmd("ps", env)
 
 
 def add_pull_cmd(s):
     p = s.add_parser(
         'pull', help='拉取容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     p.set_defaults(func=pull_cmd)
 
 
 def pull_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 
 def add_redeploy_cmd(s):
     p = s.add_parser(
         'redeploy', help='部署并启动服务，重新编译容器，移除不再用的容器。')
-    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=redeploy_cmd)
 
 
 def redeploy_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    internal.sync(host, p.force)
-    return internal.docker_compose_cmd("up -d --build --remove-orphans", host)
+    internal.check_env_arg()
+    env = internal.config.Conf().gen_env_by_arg()
+    internal.sync(env, p.force)
+    return internal.docker_compose_cmd("up -d --build --remove-orphans", env)
 
 def add_restart_cmd(s):
     p = s.add_parser(
         'restart', help='重启容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     p.set_defaults(func=restart_cmd)
 
 
 def restart_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 def add_rm_cmd(s):
     p = s.add_parser(
         'rm', help='删除容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     internal.add_arg_force(p)
     p.set_defaults(func=rm_cmd)
 
 
 def rm_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'rm -f'
     if p.container:
         if not p.force and not internal.user_confirm('确认删除 ', p.container, '？'):
@@ -401,42 +360,39 @@ def rm_cmd(p):
         b += ' ' + ' '.join(p.container)
     if not p.force and not internal.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 def add_start_cmd(s):
     p = s.add_parser(
         'start', help='启动容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     p.set_defaults(func=start_cmd)
 
 
 def start_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 def add_stop_cmd(s):
     p = s.add_parser(
         'stop', help='停止容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     p.set_defaults(func=stop_cmd)
 
 
 def stop_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
 
 def add_sync_cmd(s):
     p = s.add_parser(
         'sync', help='同步当前项目到远程路径')
-    internal.add_arg_host(p)
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
@@ -447,21 +403,64 @@ var, volumes 建议只用来同步初始数据。
 
 
 def sync_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    return internal.sync(host, p.force, p.obj)
+    internal.check_env_arg()
+    env = internal.config.Conf().gen_env_by_arg()
+    return internal.sync(env, p.force, p.obj)
 
 
 def add_up_cmd(s):
     p = s.add_parser(
         'up', help='创建和启动容器。')
-    internal.add_arg_host(p)
     internal.add_arg_container(p)
     p.set_defaults(func=up_cmd)
 
 
 def up_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
+    env = internal.config.Conf().gen_env_by_arg()
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, host)
+    return internal.docker_compose_cmd(b, env)
+
+# debug 模式下可用的命令：
+
+def add_clean_up_cmd(s):
+    p = s.add_parser(
+        'clean', help='删除当前目录下 drops 所有相关文件。')
+    internal.add_arg_force(p)
+    p.set_defaults(func=new_clean_up)
+
+
+def new_clean_up(p):
+    if not p.force and not internal.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
+        raise er.UserCancel
+    objPath = os.path.join(drops.__path__[0], 'docker_ops')
+    pwd = os.getcwd()
+    if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):
+        raise er.ThisIsNotDropsProject()
+    for i in os.listdir(objPath):
+        p = os.path.join(objPath, i)
+        t = os.path.join(pwd, i)
+        if os.path.isdir(p):
+            shutil.rmtree(t)
+        else:
+            os.remove(t)
+
+def add_undeploy_cmd(s):
+    p = s.add_parser(
+        'undeploy', help='清理掉服务器上的容器和项目')
+    internal.add_arg_force(p)
+    p.set_defaults(func=undeploy_cmd)
+
+
+def undeploy_cmd(p):
+    internal.check_env_arg()
+    if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
+        raise er.UserCancel
+    env = internal.config.Conf().gen_env_by_arg()
+    print('---------- kill ----------')
+    internal.docker_compose_cmd('kill', env)
+    print('--------- rm -f ---------')
+    internal.docker_compose_cmd('rm -f', env)
+    print('-------- rm -rf %s --------' % internal.container_path())
+    internal.exec('rm -rf %s' % internal.container_path(), env)

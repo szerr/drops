@@ -23,23 +23,24 @@ import shutil
 from . import er
 from . import ssh
 from . import config
-
-port = 22  # 默认端口
-
+from . import globa
 
 def work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
     return os.getcwd()
 
+def deploy_path():
+    return globa.args.deploy_path
 
 def volumes_path():
     # volumes路径
-    return '/srv/drops/%s/volumes/' % config.Conf().get_project_name()
-
+    return deploy_path() + '/' + config.Conf().project_name() + '/volumes/'
 
 def container_path():
-    # 容器路径
-    return '/srv/drops/%s/' % config.Conf().get_project_name()
+    # 容器路径，如果没有配置 env，始终返回当前目录
+    if globa.args.env:
+        return deploy_path() + '/' + config.Conf().project_name() + '/'
+    return work_path()
 
 
 def servers_path():
@@ -58,11 +59,17 @@ def release_path():
 def var_path():
     return container_path() + 'var/'
 
+def check_env_arg():
+    # 检查 env 参数是否存在
+    if not globa.args.env:
+        raise er.ArgsError("The -e(--env) argument is required.")
 
 def docker_cmd_template(cmd):
-    # 执行 docker-compose 命令的模板，看起来像是这样：
-    #  cd <container_path> && docker-compose %s"
-    return 'cd ' + container_path() + ' && docker-compose %s' % cmd
+    # 执行 docker-compose 命令的模板
+    if globa.args.env:
+        return 'cd ' + container_path() + ' && docker-compose %s' % cmd
+    # 如果没有指定 env，在本地执行不需要 cd 
+    return 'docker-compose %s' % cmd
 
 
 def ssh_template_key(key_path, port, username, host, b=''):
@@ -75,94 +82,72 @@ def ssh_template_pwd(password, port, username, host, b=''):
     return 'sshpass -p %s ssh -p %d %s@%s "cd %s && %s"' % (password, port, username, host, container_path(), b)
 
 
-def rsync2remotely(host, src, target):
+def rsync2remotely(env, src, target):
     # rsync 本地同步到远程路径
-    if host.key:
+    if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, key_path='<key_path>', port=host.port, username=host.username, host=host.host)
+            src=src, target=target, key_path='<key_path>', port=env.port, username=env.username, host=env.host)
         b = b.format(
-            src=src, target=target, key_path=host.key, port=host.port, username=host.username, host=host.host)
+            src=src, target=target, key_path=env.identity_file, port=env.port, username=env.username, host=env.host)
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, password='<password>', port=host.port, username=host.username, host=host.host)
+            src=src, target=target, password='<password>', port=env.port, username=env.username, host=env.host)
         b = b.format(
-            src=src, target=target, password=host.password, port=host.port, username=host.username, host=host.host)
+            src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host)
     print(echo_b)
     os.system(b)
 
 
-def rsync2local(host, src, target):
+def rsync2local(env, src, target):
     # rsync 远程同步到本地
-    if host.key:
+    if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, port=host.port, username=host.username, host=host.host)
+            src=src, target=target, port=env.port, username=env.username, host=env.host)
         print(b%('<key_path>'))
-        b = b % host.key
+        b = b % env.identity_file
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p %s rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=host.port, username=host.username, host=host.host)
+            src=src, target=target,  port=env.port, username=env.username, host=env.host)
         print(b%('<password>'))
-        b = b % host.password
+        b = b % env.password
     os.system(b)
 
 
-def rsync2local_link_dest(host, src, target, link_dest):
+def rsync2local_link_dest(env, src, target, link_dest):
     # rsync 远程同步到本地，设置链接
-    if host.key:
+    if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+            src=src, target=target,  port=env.port, username=env.username, host=env.host, link_dest=link_dest)
         print(b)
-        b = b % host.key
+        b = b % env.identity_file
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p {%s} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=host.port, username=host.username, host=host.host, link_dest=link_dest)
+            src=src, target=target,  port=env.port, username=env.username, host=env.host, link_dest=link_dest)
         print(b)
-        b = b % host.password
+        b = b % env.password
     os.system(b)
 
 
 def Fatal(*e):
     print("Fatal!", *e)
 
-
-def add_ssh_arg(p):
-    p.add_argument('-h', type=str, help='host', required=False)
-    p.add_argument('-p', '--port', dest='port', type=int,
-                   help="ssh port", default=22)
-
-
+# 多个命令会用到的参数
 def add_container_arg(p):
     p.add_argument('container', type=str,
                    help="docker container name", nargs=1)
-
 
 def add_arg_container(p):
     p.add_argument('container',
                    help="要执行操作的容器。", type=str, nargs='*')
 
-
 def add_arg_force(p):
     p.add_argument("-f", '--force',
                    help="强制执行，不再提示确认。", default=False, action='store_true')
-
-
-def add_arg_host(p):
-    p.add_argument('-a', '--host-alias',
-                   help="要执行操作的主机别名。", type=str, default='default')
-
-
-def get_arg_host_from_conf(p):
-    return config.Conf().get_host(p.host-alias)
-
-
-def parse_args(p):
-    return p.parse_args()
-
 
 def detection_cmd(*bl):
     # 确认命令是否存在
@@ -175,63 +160,63 @@ def detection_cmd(*bl):
     return True
 
 
-def ssh_shell(host, b):
+def ssh_shell(env, b):
     detection_cmd('ssh')
-    if host.key:
+    if env.identity_file:
         os.system(ssh_template_key(
-            host.key, host.port, host.username, host.host, b))
+            env.identity_file, env.port, env.username, env.host, b))
     else:
         detection_cmd('sshpass')
         os.system(ssh_template_pwd(
-            host.password, host.port, host.username, host.host, b))
+            env.password, env.port, env.username, env.host, b))
 
 
-def rsync_release(host, force):
+def rsync_release(env, force):
     print('------- sync release -------')
     detection_cmd('rsync')
-    # TODO 0.2.1 添加向下兼容
-    if not os.path.isdir('release'):
-        os.mkdir('release')
-    rsync2remotely(host, 'release', container_path())
+    rsync2remotely(env, 'release', container_path())
 
 
-def rsync_docker(host, force=False):
+def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    if not force and not confirm_drops_project(host):
-        if not user_confirm("主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (host.host, container_path())):
+    if not force and not confirm_drops_project(env):
+        if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (env.env, env.host, container_path())):
             raise er.UserCancel
-    rsync2remotely(host, 'docker-compose.yaml', docker_path())
+    rsync2remotely(env, 'docker-compose.yaml', docker_path())
 
 
-def rsync_servers(host, force):
+def rsync_servers(env, force):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    rsync2remotely(host, 'servers', container_path())
+    rsync2remotely(env, 'servers', container_path())
 
 
-def rsync_var(host, force):
-    if not confirm_empty_dir(host, var_path()):
-        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, var_path())):
+def rsync_var(env, force):
+    if not confirm_empty_dir(env, var_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, var_path())):
             raise er.UserCancel
-    rsync2remotely(host, 'var', container_path())
+    rsync2remotely(env, 'var', container_path())
 
 
-def rsync_volumes(host, force):
-    if not confirm_empty_dir(host, volumes_path()):
-        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (host.host, volumes_path())):
+def rsync_volumes(env, force):
+    if not confirm_empty_dir(env, volumes_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, volumes_path())):
             raise er.UserCancel
-    rsync2remotely(host, 'volumes', container_path())
+    rsync2remotely(env, 'volumes', container_path())
 
 
-def sync(host, force=False, obj='ops'):
+def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
-    c = ssh.Client(**host.to_conf())
-    _, status = c.exec(' mkdir -p ' + container_path())
+    c = ssh.Client(env)
+    if force: # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
+        _, status = c.exec(' mkdir -p ' + container_path())
+    else:
+        _, status = c.exec(' mkdir -p ' + deploy_path())
     if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + container_path() + ', code=' + str(status))
-    arg = (host, force)
+        raise er.CmdExecutionError('mkdir -p ' + deploy_path() + ', code=' + str(status))
+    arg = (env, force)
     if obj == 'ops':
         rsync_docker(*arg)
         rsync_release(*arg)
@@ -250,18 +235,18 @@ def sync(host, force=False, obj='ops'):
         raise er.UnsupportedSyncObject(obj)
 
 
-def rsync_backup(host, src, target, link_desc=''):
+def rsync_backup(env, src, target, link_desc=''):
     detection_cmd('rsync')
     if link_desc:
-        return rsync2local_link_dest(host, src, target, link_desc)
-    return rsync2local(host, src, target)
+        return rsync2local_link_dest(env, src, target, link_desc)
+    return rsync2local(env, src, target)
 
 
-def backup(host, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
+def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
-        backup2dir = os.path.join(backup2dir, config.Conf().get_project_name())
+        backup2dir = os.path.join(backup2dir, config.Conf().project_name())
     # 如果设定了时间格式
     if time_format:
         # 备份目录是备份对象下的时间目录
@@ -350,7 +335,7 @@ def backup(host, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', kee
         if not force and os.path.isdir(to_path) and os.listdir(to_path):
             if not user_confirm("本地目录 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % (to_path)):
                 raise er.UserCancel
-        rsync_backup(host, s[0], to_path, link_desc)
+        rsync_backup(env, s[0], to_path, link_desc)
 
 
 def docker_compose_cmd(cmd, host):
@@ -364,10 +349,14 @@ def docker_compose_cmd(cmd, host):
     return exec(docker_cmd_template(cmd), host)
 
 
-def exec(cmd, host):
-    # 对 host 执行任意远程命令
-    print('run host: ', host.host)
-    c = ssh.Client(**host.to_conf())
+def exec(cmd, env):
+    # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
+    if not env.env:
+        print('run local:', cmd)
+        return os.system(cmd)
+    print('run host: ', env.env, cmd)
+    c = ssh.Client(env)
+    # 在远程路径下执行，要 cd 到项目目录
     stdout, status = c.exec(cmd)
     if status != 0:
         print('----------------- fail -----------------')
@@ -390,9 +379,9 @@ def user_confirm(*l):
     return False
 
 
-def confirm_drops_project(host):
+def confirm_drops_project(env):
     # 防止出现同步时误删除，同步前检查目录。
-    c = ssh.Client(**host.to_conf())
+    c = ssh.Client(env)
 
     # 目录存在返回0，否则返回1
     while True:
@@ -400,9 +389,11 @@ def confirm_drops_project(host):
             '''if [ -d %s ]; then exit 0; else exit 1; fi''' % container_path(), False)
         if s != -1:
             break
-    # 目录不存在时可以安全同步
+    # 目录不存在时可以安全同步，创建项目目录
     if s == 1:
+        c.exec('''mkdir -p ''' + container_path(), False)
         return True
+
     b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
         container_path()+'/docker-compose.yaml', container_path()+'/servers')
 
@@ -417,9 +408,9 @@ def confirm_drops_project(host):
     return False
 
 
-def confirm_empty_dir(host, path):
+def confirm_empty_dir(env, path):
     # 返回 path 是否是空目录
-    c = ssh.Client(**host.to_conf())
+    c = ssh.Client(env)
     # 目录存在返回0，否则返回1
     while True:
         _, s = c.exec(

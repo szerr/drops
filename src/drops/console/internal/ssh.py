@@ -19,74 +19,35 @@ from paramiko.client import SSHClient
 import paramiko
 import os
 
-from . import er
-from . import config
-
 
 class Client():
-    def __init__(self, arg):
-        self._client = None
-
-        self.host = arg.host
-        self.port = arg.port
-        self.username = arg.username
-        self.identity_file = arg.identity_file
-        self.password = arg.password
-        self.env = arg.env
-        self.encoding = arg.encoding
-        self.deploy_path = arg.deploy_path
-        self.config = arg.config
-
-    def _set_client(self):
-        # 如果指定了 env，host、identity_file、 password 参数优先级高于 env。其他如果不是默认值，优先级高于env。
-        if self.env:
-            c = config.Conf().open(self.config)
-            env = c.get_env(self.env)
-            if not self.host:
-                self.host = env.host
-            if not self.identity_file and not self.password:
-                if env.identity_file:
-                    self.identity_file = env.identity_file
-                elif env.password:
-                    self.password = env.password
-            
-            if self.port is '22':
-                self.port = env.port
-            if self.username is 'root':
-                self.username = env.username
-            if self.config is 'utf-8':
-                self.config = env.config
-        
+    def __init__(self, env):
+        self.encoding = env.encoding
         self._client = SSHClient()
         self._client.load_system_host_keys()
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         if os.path.isfile('secrets/ssh/known_hosts'):
             self._client.load_system_host_keys('secrets/ssh/known_hosts')
-        
-        if self.identity_file != None:
+        if env.identity_file:
             self._client.connect(
-                self.host, port=self.port, username=self.username, key_filename=self.identity_file)
-        elif self.password != None:
+                env.host, port=env.port, username=env.username, key_filename=env.identity_file)
+        elif env.password:
             self._client.connect(
-                self.host, port=self.port, username=self.username, password=self.password)
+                env.host, port=env.port, username=env.username, password=env.password)
         else:
-            # 如果没有配置key，去预设的 secrets/ssh 或 ~/.ssh 寻找key。时间问题，我只用第一个匹配 id_ 的文件作为key。
+            # 如果没有配置key，去预设的 secrets/ssh 寻找。我先用第一个匹配 id_ 的文件作为key。
             if os.path.isdir('secrets/ssh'):
                 for i in os.listdir('secrets/ssh'):
                     if i.startswith('id_'):
-                        self.identity_file = i
+                        env.identity_file = i
                         break
-            if not self.identity_file:
-                if os.path.isdir('~/.ssh'):
-                    for i in os.listdir('~/.ssh'):
-                        if i.startswith('id_'):
-                            self.identity_file = i
-                            break
-            if self.identity_file:
+            if env.identity_file:
                 self._client.connect(
-                    self.host, port=self.port, username=self.username, key_filename=self.identity_file)
+                    env.host, port=env.port, username=env.username, key_filename=env.identity_file[0])
             else:
-                raise er.PwdAndKeyCannotBeEmpty
+                # 没有的话 paramiko 会寻找 ssh 预设的 key
+                self._client.connect(env.host, port=env.port, username=env.username)
+                # raise er.PwdAndKeyCannotBeEmpty
 
     def exec(self, b, show=True):
         if self._client == None:
@@ -111,7 +72,7 @@ class Client():
                 s = stdout.read()
                 if s == b'':
                     break
-                so += s
+                so += s.decode(self.encoding)
         return so, stdout.channel.recv_exit_status()
 
     def exed(self, b):

@@ -16,21 +16,20 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 
-from . import internal
+# import logging
+# log = logging.getLogger('drops')
+# log.setLevel(logging.DEBUG)
 
+# ch = logging.StreamHandler()
+# formatter = logging.Formatter('%(levelname)s: %(message)s')
+# ch.setFormatter(formatter)
+# log.addHandler(ch)
 
-def add_exec_cmd(s):
-    p = s.add_parser(
-        'exec', help='在任意容器中执行命令。')
-    p.add_argument("container", metavar="container",
-                   type=str, help="容器名")
-    internal.add_arg_host(p)
-    p.add_argument('cmds',
-                   help="要执行的命令。", type=str, nargs='+')
-    p.set_defaults(func=exec_cmd)
+# log.debug('debug message')
+# log.info('info message')
+# log.warning('warn message')
+# log.error('error message')
+# log.critical('critical message')
 
-
-def exec_cmd(p):
-    host = internal.get_arg_host_from_conf(p)
-    internal.exec(internal.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), host)
+debug_model = False
+args = None

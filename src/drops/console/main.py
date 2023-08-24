@@ -20,7 +20,7 @@
 import argparse
 import sys
 
-import internal
+from . import internal
 
 desc = '''drops 是基于 ssh 和 docker-compose 的运维模板，附带的 drops 命令可以方便的管理项目，部署服务。'''
 
@@ -35,25 +35,35 @@ def main():
     # 初始化命令行参数
     internal.initCmd(parser, subparsers)
     # 解析参数
-    arg = parser.parse_args()
+    args = parser.parse_args()
 
-    print(arg.host, arg.port, arg.key, arg.password, arg.env, arg.deploy_path, arg.encoding, arg.config)
+    # python3 main.py -H example.com -p 1 -u r -i ~/.ssh/id_ed25519 -P 1 -e production -E utf-8 -d /srv/drops -c drops.yaml
+    # print('host', args.host)
+    # print('port', args.port)
+    # print('username', args.username)
+    # print('identity_file', args.identity_file)
+    # print('password', args.password)
+    # print('env', args.env)
+    # print('encoding', args.encoding)
+    # print('deploy_path', args.deploy_path)
+    # print('config', args.config)
 
-    internal.globals.ssh_client = internal.ssh.Client(arg)
+    internal.globa.args = args
 
     # 调用相关命令，没有命令时打印 help
-    if 'func' in arg:
-        if not arg.debug:
+    if 'func' in args:
+        if not args.debug:
             try:
-                arg.func(arg)
+                args.func(args)
             except Exception as e:
                 print('Fatal:', type(e).__name__, ':', e)
                 sys.exit(1)
         else:
-            arg.func(arg)
+            internal.globa.debug_model = True
+            args.func(args)
     else:
-        parser.print_help()
-
+        print(args)
+        # parser.print_help()
 
 if __name__ == "__main__":
     import internal  # 为了单个文件调试

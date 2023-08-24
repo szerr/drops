@@ -24,7 +24,7 @@ import shutil
 
 test_project_name = 'te'
 start_dir = os.getcwd()
-base_bin = 'drops --debug '
+base_bin = 'python3 ../main.py --debug '
 
 binLi = [
     # 远程部署
@@ -76,8 +76,6 @@ class BinErr(Exception):
 
 
 def testBin(b):
-    b = base_bin + ' ' + b
-    print('run>', b)
     s = os.system(b)
     if s != 0:
         raise BinErr(b)
@@ -88,10 +86,20 @@ def clear():
         shutil.rmtree(test_project_name)
 
 def main():
-    testBin('new ' + test_project_name)
+    s = os.system('python3 main.py --debug new ' + test_project_name)
+    if s != 0:
+        print('create project error.')
+        clear()
+        return
+
     os.chdir(test_project_name)
     for b in binLi:
-        testBin(b)
+        b = base_bin + b
+        print('run>', b)
+        s = os.system(b)
+        if s != 0:
+            break
+
     clear()
 
 

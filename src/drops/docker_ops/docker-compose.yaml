@@ -50,7 +50,7 @@ services:
     image: szerr/drops:latest
     volumes:
       # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
-      - ./secrets/home_ssh:/root/.ssh
+      - ./secrets/ssh:/root/.ssh
       # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
       - ./servers/drops/cron/15min:/etc/periodic/15min:ro
       - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
