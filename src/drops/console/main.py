@@ -62,8 +62,7 @@ def main():
             internal.globa.debug_model = True
             args.func(args)
     else:
-        print(args)
-        # parser.print_help()
+        parser.print_help()
 
 if __name__ == "__main__":
     import internal  # 为了单个文件调试
