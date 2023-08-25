@@ -193,7 +193,8 @@ def rsync_image(env, force):
 def rsync_ops(env, force):
     print('------- sync ops -------')
     detection_cmd('rsync')
-    rsync2remotely(env, '.', container_path(), ['var', 'volumes', 'backup'])
+    exclude = [i for i in os.listdir(work_path()) if not i in ['docker-compse.yaml', 'docker-compse.yml', 'release', 'image']]
+    rsync2remotely(env, '.', container_path(), exclude)
 
 def rsync_var(env, force):
     if not confirm_empty_dir(env, var_path()):
