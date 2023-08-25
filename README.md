@@ -1,23 +1,19 @@
 # drops
 
-drops 是基于 ssh 和 docker-compose 的运维模板。
-附带的 drops 命令可以方便的管理项目，部署服务。
+drops 是总结了我用 docker 的运维经验所做的部署和管理工具。
+基于 docker-compose 和 rsync，便于在没有完善 CI/CD 流程的情况下部署服务，版本控制，并提供备份和迁移。
 
 [快速入门](#快速入门)
 
-[项目背景](#项目背景)
-
-[项目管理](#项目管理)
+[项目结构](#项目结构)
 
 [与项目集成](#与项目集成)
 
 [数据管理](#数据管理)
 
-[drops 命令](#drops命令)
+[命令](#命令)
 
 [包含的示例](#包含的示例)
-
-[注意事项](#注意事项)
 
 ## 快速入门
 
@@ -42,98 +38,57 @@ cd example
 ### 配置远程服务器
 
 ```sh
-drops host add default ssh.example.com <port df:22> <user df:root> -k ~/.ssh/id_ed25519 # 配置一个测试服务器。
+drops -H <hostname> -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e dev -E utf-8 -d /srv/drops -c drops.yaml env add# 配置一个测试服务器。
 drops init_env_debian # debian 系这样初始化远程环境
 ```
 
 如果配置出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
 centos 配置很复杂，参考 <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> 安装 docker，然后去 <https://github.com/docker/compose/releases/latest> 下载安装 docker-compose。
-podman-compose 目前（2022 年 12 月）还是有一些问题，会造成 drops 部署部分不能用。
+podman-compose 和 docker-compose 并不兼容，会造成 drops 部署部分不能用。
 
 ### 部署示例服务
 
 默认会启动一个 nginx 容器。
 
 ```sh
-drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动容器。
+drops -e dev deploy # 同步项目目录到 /srv/drops/example 并启动容器。
 ```
 
 访问 http://<ip> 可以看到服务正常启动了。
 
-## 项目背景
+## 项目结构
 
-虽然看上去 drops 是一个部署工具；但我想表达的是：
+新建`drops`项目后，会生成一些预定的文件夹，其中：
 
-- 运维相关文件纳入版本控制，保证运维操作可追踪可回溯。
-- 用文件保证环境一致，一切基于文件。
-- 不要手动编辑线上和测试的配置文件，不要在线调试。
-- 所有更改上测试通过之后传版本控制，再部署到线上；出问题利用`git`回滚。
-- 应用发布的包，静态文件，视情况纳入运维项目的版本控制，和服务配置绑定。
-- 考虑对应用数据做冗余、快照和备份。
+- `src` 是项目的源码路径，每个项目一个文件夹。每个项目对应一个到多个容器。项目的 Dockerfile 也应该放在这里。
+- `image` 下存放每个容器的依赖文件，配置等。需要对第三方容器做 build 的 Dockerfile 放在这里。
+- `releace` 存放项目的可执行文件，静态文件等，并映射到容器中执行。使用 `drops build` 执行编译发布到这个文件夹。
+- `volumes` 容器落地的数据，可以用 `drops backup` 备份。
+- `backup` 如果没有，运行`drops backup` 会创建。存放备份文件。
+- `var` 容器暂存的文件，cache、log 等不重要的数据。
+- `secret` 存放验证文件
 
-## 项目管理
-
-将服务部署管理分为：`机器-系统-容器/项目`。
-
-一台`机器`可以部署一个或多个`系统`，一个系统由一到多个`容器`/`项目`组成。
-
-`drops` 对应`系统`这一层，管理多个服务。
-
-容器的配置文件、依赖文件，在`servers`下创建以服务名命名的文件夹，放到对应的文件夹中。
-
-应用程序发布的包，静态文件，在`release`下创建相应的文件夹，在`docker-compose.yaml` 用相对路径（`./release/`）映射到容器内。如果 drops 创建为单独的项目，请考虑将`release`纳入版本控制。
-
-应用数据，容器生成的文件，放到`volumes`对应的文件夹。在 `docker-compose.yaml` 用相对路径（`./volumes/`）映射到容器里。这样本地测试会很方便。
-经常变化的文件，如 log、lock、sock 文件等，放到 `var` 中。按`文件类型/服务名`分类存放。不要做版本控制，不建议做备份。
-
-编辑`docker-compose.yaml`，定义你需要的服务。
-
-**注意！不要将应用数据，容器生成的文件放到 servers、releace，同步时文件会被删除或覆盖。**
-
-参照 `servers/crond/periodic_example/backup.sh` 快速搭建异地增量备份。
-
-一个系统可以部署到多台机器，其中机器可以分为：线上，测试 1，测试 2，bulabula。。。。
-
-`drops host` 可以管理多台机器。可以试试 `drops ls` 输出目前的 `group` 和 `host`
-
-`drops` 没有指定 `-a\--host-alias` 参数的时候，默认对 `default` 下所有机器做操作。所以可以当作单机部署工具用。
+**注意！不要将应用数据，容器生成的文件放到 image、releace，`docker sync` 同步时远程路径会被删除或覆盖。**
 
 ## 与项目集成
 
-两种方式，集成到项目内或作为单独的项目管理
-
-### 集成到项目内
-
-在需要管理的项目目录下执行`drops new drops <projectName>`，会在当前目录创建 drops 文件夹。这适合只有一个版本控制项目的情况。
-
-默认`git`会排除`releace`，保持这样就好。写一个`build`脚本，输出指向`releace.<projectName>`。
-
-### 作为单独的项目管理
-
-当需要版本控制管理多个项目时，建议新建一个专为运维的项目：`drops new <projectName>`，这会在当前目录创建`<projectName>`文件夹。然后用`git init`初始化版本控制。
-
-默认`git`会排除`releace`，这种情况建议从`.gitignore`删除`releace`，并将其纳入版本控制。每个项目写一个 build 脚本，将输出指向`releace.<projectName>`。
+将项目放到 src 下，不需要纳入版本控制。每个项目分开管理。
 
 ## 数据管理
 
-将项目分成运行时可变和不可变的
+配置文件映射到 `image` 下并做版本控制。
+程序生成的文件，不需要做保留的如日志，映射到 `./var/` 下。
+落地的文件，数据库等映射到 `./volumes/<服务名>`，这里支持做备份。
 
-- 运行时可变的是服务产生的数据，如：用户数据， 日志，数据库
-- 运行时不可变的，如：程序，服务配置，静态文件
+不确定的话，考虑数据是否需要版本控制，需要的话就放到`image`下。不需要的放到源码中，`build`时复制到 `release`。
 
-运行时可变的数据是放到`/srv/drops/<项目名>/volumes/<服务名>/<映射到容器的文件夹>`，这是建议做冗余、快照和备份的地方。
-
-不变的数据放到`servers`下并做版本控制。
-
-不确定的话，考虑数据是否需要版本控制，需要的话就放到`servers`下。不需要的放到源码中，`build`时复制到 `release`。
-
-## drops 命令
+## 命令
 
 | drops 命令                  | 功能                                                             |
 | --------------------------- | ---------------------------------------------------------------- |
 | `new dirname <projectname>` | 创建一个`drops`项目。                                            |
 | `init`                      | 在当前目录初始化一个 `drops` 项目。                              |
-| `host`                      | 管理服务器连结配置。                                             |
+| `env`                       | 管理服务器连结配置。                                             |
 | `deploy`                    | 同步后启动容器。                                                 |
 | `redeploy`                  | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。     |
 | `sync`                      | 同步项目到服务器。                                               |
@@ -163,18 +118,11 @@ drops deploy # 同步项目目录到 /srv/drops/<项目文件夹名> 并启动�
 
 `docker-compose.yaml` 中可以看到`nginx`，`crond`，`acme.sh`。
 
-`servers/nginx/lib` 中有几个简单的配置
+`image/nginx/lib` 中有几个简单的配置
 
-`servers/nginx/nginx.conf` 可以选择开启的配置
+`image/nginx/nginx.conf` 可以选择开启的配置
 
-`servers/crond/periodic_example/backup.sh` 是一个异地备份脚本。
-
-## 注意事项
-
-drops 的功能还在测试开发阶段，我认为可靠时会发 v1 版。版本号第二位变动时说明命令行界面有比较大的变化。
-核心理念是不变的，drops 只是这个理念的工具。
-使用过程中遇到任何问题或建议请发 issue 给我，我会尽快解决。
-为了实现备份，同步，部署相关功能，执行的 `rsync` 命令 会带有 `--del` 参数，会删除不匹配的文件，保持文件夹内文件相同，**删除前不一定有提示**。我会在可能有风险的地方加提示，也会做相应测试。也请各位在使用时多加小心并承担相应风险。用测试确定流程，保障逻辑准确；用冗余，备份和快照防止数据丢失。
+`image/crond/periodic_example/backup.sh` 是一个异地备份脚本。
 
 ## 致谢
 
