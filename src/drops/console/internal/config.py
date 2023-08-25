@@ -106,7 +106,6 @@ class Conf():
                     'host':'example.org',
                     'port':'22',
                     'username':'root',
-                    'identity_file':'secrets/ssh/id_ed25519',
                     'password':'123456',
                     'encoding':'utf-8',
                     'deploy_path':'/srv/drops',

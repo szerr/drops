@@ -29,7 +29,7 @@ def initCmd(p, s):
     p.add_argument('-u', '--username',
         help="User for login, default root.", default='root', nargs='?', type=str)
     p.add_argument('-i', '--identity-file',
-        help='Identity file. default: "./secrets/id_*" or "~/.ssh/id_*".', default='', nargs='?', type=str)
+        help='Identity file. default: "./secret/id_*" or "~/.ssh/id_*".', default='', nargs='?', type=str)
     p.add_argument('-P', '--password',
         help="Login password. identity file is recommended for authentication.", default='', nargs='?', type=str)
     p.add_argument('-e', '--env',

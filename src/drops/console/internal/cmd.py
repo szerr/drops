@@ -59,7 +59,7 @@ def add_backup_cmd(s):
         'docker',  'release', 'servers', 'var', 'volumes', 'ops', 'all'], nargs='?',
         help='''同步的文件夹。docker: docker-compose，ops 是除 var 和 volumes 的所有。''')
     p.add_argument('-t', '--target',
-                   help="目标路径", default='backup/')
+                   help="目标路径", default='backup')
     p.add_argument('-d', '--time-format', default='%Y-%m-%d_%H:%M:%S',
                    help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
@@ -397,8 +397,8 @@ def add_sync_cmd(s):
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
-        'docker',  'release', 'servers', 'var', 'volumes', 'ops'], nargs='?',
-        help='''同步的对象。docker: docker-compose，ops 是除 var 和 volumes 的所有。默认：ops。
+        'docker',  'release', 'image', 'var', 'volumes', 'ops'], nargs='?',
+        help='''同步的对象。docker: docker-compose，ops 是 除 的所有。默认：ops。
 var, volumes 建议只用来同步初始数据。
 同步 var, volumes 会检查远程目录是否为空文件夹，并做相应提示。''')
 

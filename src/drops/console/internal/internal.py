@@ -82,21 +82,22 @@ def ssh_template_pwd(password, port, username, host, b=''):
     return 'sshpass -p %s ssh -p %d %s@%s "cd %s && %s"' % (password, port, username, host, container_path(), b)
 
 
-def rsync2remotely(env, src, target):
+def rsync2remotely(env, src, target, exclude=[]):
     # rsync 本地同步到远程路径
+    exclude = ' --exclude '.join(['', '.gitignore', '.git', 'drops.yaml', 'src', 'secret'] + exclude)
     if env.identity_file:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, key_path='<key_path>', port=env.port, username=env.username, host=env.host)
+            src=src, target=target, key_path='<key_path>', port=env.port, username=env.username, host=env.host, exclude=exclude)
         b = b.format(
-            src=src, target=target, key_path=env.identity_file, port=env.port, username=env.username, host=env.host)
+            src=src, target=target, key_path=env.identity_file, port=env.port, username=env.username, host=env.host, exclude=exclude)
     else:
         detection_cmd('sshpass')
-        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" --exclude "./drops.yaml" --exclude ".git" --exclude ".gitignore" {src} {username}@{host}:{target}'
+        b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, password='<password>', port=env.port, username=env.username, host=env.host)
+            src=src, target=target, password='<password>', port=env.port, username=env.username, host=env.host, exclude=exclude)
         b = b.format(
-            src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host)
+            src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host, exclude=exclude)
     print(echo_b)
     os.system(b)
 
@@ -181,17 +182,18 @@ def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    if not force and not confirm_drops_project(env):
-        if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，是否继续同步？" % (env.env, env.host, container_path())):
-            raise er.UserCancel
     rsync2remotely(env, 'docker-compose.yaml', docker_path())
 
 
-def rsync_servers(env, force):
-    print('------- sync servers -------')
+def rsync_image(env, force):
+    print('------- sync image -------')
     detection_cmd('rsync')
-    rsync2remotely(env, 'servers', container_path())
+    rsync2remotely(env, 'image', container_path())
 
+def rsync_ops(env, force):
+    print('------- sync ops -------')
+    detection_cmd('rsync')
+    rsync2remotely(env, '.', container_path(), ['var', 'volumes', 'backup'])
 
 def rsync_var(env, force):
     if not confirm_empty_dir(env, var_path()):
@@ -206,7 +208,6 @@ def rsync_volumes(env, force):
             raise er.UserCancel
     rsync2remotely(env, 'volumes', container_path())
 
-
 def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
     c = ssh.Client(env)
@@ -214,19 +215,20 @@ def sync(env, force=False, obj='ops'):
         _, status = c.exec(' mkdir -p ' + container_path())
     else:
         _, status = c.exec(' mkdir -p ' + deploy_path())
+        # if not confirm_drops_project(c):
+        #     if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，继续同步可能会导致丢失数据。是否继续？" % (env.env, env.host, container_path())):
+        #         raise er.UserCancel
     if status != 0:
         raise er.CmdExecutionError('mkdir -p ' + deploy_path() + ', code=' + str(status))
     arg = (env, force)
     if obj == 'ops':
-        rsync_docker(*arg)
-        rsync_release(*arg)
-        rsync_servers(*arg)
+        rsync_ops(*arg)
     elif obj == 'docker':
         rsync_docker(*arg)
     elif obj == 'release':
         rsync_release(*arg)
-    elif obj == 'servers':
-        rsync_servers(*arg)
+    elif obj == 'image':
+        rsync_image(*arg)
     elif obj == 'var':
         rsync_var(*arg)
     elif obj == 'volumes':
@@ -379,26 +381,23 @@ def user_confirm(*l):
     return False
 
 
-def confirm_drops_project(env):
-    # 防止出现同步时误删除，同步前检查目录。
-    c = ssh.Client(env)
-
-    # 目录存在返回0，否则返回1
+def confirm_drops_project(client):
+    # 防止出现同步时误删除，同步前检查目录。目录存在返回0，否则返回1
     while True:
-        _, s = c.exec(
+        _, s = client.exec(
             '''if [ -d %s ]; then exit 0; else exit 1; fi''' % container_path(), False)
         if s != -1:
             break
     # 目录不存在时可以安全同步，创建项目目录
     if s == 1:
-        c.exec('''mkdir -p ''' + container_path(), False)
+        client.exec('''mkdir -p ''' + container_path(), False)
         return True
 
     b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
         container_path()+'/docker-compose.yaml', container_path()+'/servers')
 
     while True:
-        _, s = c.exec(b, False)
+        _, s = client.exec(b, False)
         # 这条命令很容易返回 -1，貌似是 paramiko 的锅。重试。
         if s != -1:
             break

@@ -99,8 +99,7 @@ def main():
         s = os.system(b)
         if s != 0:
             break
-
-    clear()
+    # clear()
 
 
 if __name__ == '__main__':

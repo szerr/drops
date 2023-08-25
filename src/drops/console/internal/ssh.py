@@ -26,8 +26,8 @@ class Client():
         self._client = SSHClient()
         self._client.load_system_host_keys()
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        if os.path.isfile('secrets/ssh/known_hosts'):
-            self._client.load_system_host_keys('secrets/ssh/known_hosts')
+        if os.path.isfile('secret/ssh/known_hosts'):
+            self._client.load_system_host_keys('secret/ssh/known_hosts')
         if env.identity_file:
             self._client.connect(
                 env.host, port=env.port, username=env.username, key_filename=env.identity_file)
@@ -35,9 +35,9 @@ class Client():
             self._client.connect(
                 env.host, port=env.port, username=env.username, password=env.password)
         else:
-            # 如果没有配置key，去预设的 secrets/ssh 寻找。我先用第一个匹配 id_ 的文件作为key。
-            if os.path.isdir('secrets/ssh'):
-                for i in os.listdir('secrets/ssh'):
+            # 如果没有配置key，去预设的 secret/ssh 寻找。我先用第一个匹配 id_ 的文件作为key。
+            if os.path.isdir('secret/ssh'):
+                for i in os.listdir('secret/ssh'):
                     if i.startswith('id_'):
                         env.identity_file = i
                         break
