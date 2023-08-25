@@ -36,9 +36,14 @@ binLi = [
     'env ls',
     '-e production init-debian-env',
     'project name example',
-    '-e production sync -f',
-    '-e production sync volumes -f',
-    '-e production sync -f var',
+
+    '-e production sync',
+    '-e production sync volumes',
+    '-e production sync var',
+    '-e production sync image',
+    '-e production sync release',
+    '-e production sync docker',
+
     '-e production deploy',
     'ps',
     '-e production nginx-reload',
@@ -61,7 +66,7 @@ binLi = [
     '-e production stop',
     '-e production rm -f',
     '-e production backup all -d %Y-%m-%d_%H:%M:%S -k 1',
-    # '-e production undeploy -f',
+    '-e production undeploy -f',
     # 本地部署
     'up',
     'ps',

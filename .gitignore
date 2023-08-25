@@ -4,9 +4,3 @@ egg-info
 *.egg-info
 debug.log
 .idea
-
-upload.sh
-install.sh
-build.sh
-te
-release.sh
