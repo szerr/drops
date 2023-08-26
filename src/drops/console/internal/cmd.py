@@ -240,14 +240,18 @@ def add_logs_cmd(s):
                    type=str, help="容器名")
     p.add_argument("-f", '--follow',
                    help="持续日志输出。", default=False, action='store_true')
+    p.add_argument("-l", '--loop',
+                   help="循坏输出，容器重启后重新运行。", default=False, action='store_true')
     p.set_defaults(func=logs_cmd)
-
 
 def logs_cmd(p):
     env = internal.config.Conf().gen_env_by_arg()
     b = 'logs '
     if p.follow:
         b += '-f '
+    if p.loop:
+        while True:
+            internal.docker_compose_cmd(b+p.container, env)
     return internal.docker_compose_cmd(b+p.container, env)
 
 
