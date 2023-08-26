@@ -23,7 +23,7 @@ from . import globa
 from . import er
 
 class Environment():
-    def __init__(self, host, port, username, env, encoding, deploy_path, identity_file='', password=''):
+    def __init__(self, host, port, username, env, encoding, deploy_path='', identity_file='', password=''):
         self.host = host
         self.port = port
         self.username = username
@@ -107,6 +107,7 @@ class Conf():
                     'port':'22',
                     'username':'root',
                     'password':'123456',
+                    'identity_file':'~/.ssh/id_ed25519',
                     'encoding':'utf-8',
                     'deploy_path':'/srv/drops',
                 }
@@ -188,7 +189,7 @@ class Conf():
                     env.password = conf.password
 
             # 连接信息如果不是默认值，优先级高于配置文件
-            if env.port == '22':
+            if env.port == 22:
                 env.port = conf.port
             if env.username == 'root':
                 env.username = conf.username
