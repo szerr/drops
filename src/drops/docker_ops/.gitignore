@@ -1,5 +1,4 @@
-release
-var
-volumes
-variable
-backup
+./var
+./volumes
+./backup
+./src
