@@ -4,3 +4,5 @@ egg-info
 *.egg-info
 debug.log
 .idea
+src/drops/console/te
+./te

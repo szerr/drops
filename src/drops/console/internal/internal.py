@@ -99,7 +99,7 @@ def rsync2remotely(env, src, target, exclude=[]):
         b = b.format(
             src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host, exclude=exclude)
     print(echo_b)
-    os.system(b)
+    return system(b)
 
 
 def rsync2local(env, src, target):
@@ -115,7 +115,7 @@ def rsync2local(env, src, target):
             src=src, target=target,  port=env.port, username=env.username, host=env.host)
         print(b%('<password>'))
         b = b % env.password
-    os.system(b)
+    return system(b)
 
 
 def rsync2local_link_dest(env, src, target, link_dest):
@@ -131,7 +131,7 @@ def rsync2local_link_dest(env, src, target, link_dest):
             src=src, target=target,  port=env.port, username=env.username, host=env.host, link_dest=link_dest)
         print(b)
         b = b % env.password
-    os.system(b)
+    return system(b)
 
 
 def Fatal(*e):
@@ -160,54 +160,61 @@ def detection_cmd(*bl):
             raise er.CmdNotExist(b)
     return True
 
+def system(b):
+    # os.system 在不同平台的行为不同，特别在 linux 下，是一个 16 位数，如果直接返回给 shell，会被截取低 8 位。这里做平台兼容。
+    exit_code = os.system(b)
+    if exit_code:
+        if exit_code > 255:
+            exit_code = exit_code / 256
+    return exit_code
 
 def ssh_shell(env, b):
     detection_cmd('ssh')
     if env.identity_file:
-        os.system(ssh_template_key(
+        return system(ssh_template_key(
             env.identity_file, env.port, env.username, env.host, b))
     else:
         detection_cmd('sshpass')
-        os.system(ssh_template_pwd(
+        return system(ssh_template_pwd(
             env.password, env.port, env.username, env.host, b))
 
 
 def rsync_release(env, force):
     print('------- sync release -------')
     detection_cmd('rsync')
-    rsync2remotely(env, 'release', container_path())
+    return rsync2remotely(env, 'release', container_path())
 
 
 def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    rsync2remotely(env, 'docker-compose.yaml', docker_path())
+    return rsync2remotely(env, 'docker-compose.yaml', docker_path())
 
 
 def rsync_image(env, force):
     print('------- sync image -------')
     detection_cmd('rsync')
-    rsync2remotely(env, 'image', container_path())
+    return rsync2remotely(env, 'image', container_path())
 
 def rsync_ops(env, force):
     print('------- sync ops -------')
     detection_cmd('rsync')
     exclude = [i for i in os.listdir(work_path()) if not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'image']]
-    rsync2remotely(env, '.', container_path(), exclude)
+    return rsync2remotely(env, '.', container_path(), exclude)
 
 def rsync_var(env, force):
     if not confirm_empty_dir(env, var_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, var_path())):
             raise er.UserCancel
-    rsync2remotely(env, 'var', container_path())
+    return rsync2remotely(env, 'var', container_path())
 
 
 def rsync_volumes(env, force):
     if not confirm_empty_dir(env, volumes_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, volumes_path())):
             raise er.UserCancel
-    rsync2remotely(env, 'volumes', container_path())
+    return rsync2remotely(env, 'volumes', container_path())
 
 def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
@@ -223,17 +230,17 @@ def sync(env, force=False, obj='ops'):
         raise er.CmdExecutionError('mkdir -p ' + deploy_path() + ', code=' + str(status))
     arg = (env, force)
     if obj == 'ops':
-        rsync_ops(*arg)
+        return rsync_ops(*arg)
     elif obj == 'docker':
-        rsync_docker(*arg)
+        return rsync_docker(*arg)
     elif obj == 'release':
-        rsync_release(*arg)
+        return rsync_release(*arg)
     elif obj == 'image':
-        rsync_image(*arg)
+        return rsync_image(*arg)
     elif obj == 'var':
-        rsync_var(*arg)
+        return rsync_var(*arg)
     elif obj == 'volumes':
-        rsync_volumes(*arg)
+        return rsync_volumes(*arg)
     else:
         raise er.UnsupportedSyncObject(obj)
 
@@ -356,7 +363,7 @@ def exec(cmd, env):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     if not env.env:
         print('run local:', cmd)
-        return os.system(cmd)
+        return system(cmd)
     print('run host: ', env.env, cmd)
     c = ssh.Client(env)
     # 在远程路径下执行，要 cd 到项目目录

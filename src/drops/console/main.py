@@ -41,19 +41,20 @@ def main():
     if 'func' in args:
         if not args.debug:
             try:
-                args.func(args)
+                return args.func(args)
             except Exception as e:
                 print('Fatal:', type(e).__name__, ':', e)
-                sys.exit(1)
+                return 1
         else:
             internal.globa.debug_model = True
-            args.func(args)
+            return args.func(args)
     else:
         parser.print_help()
+    return 0
 
 if __name__ == "__main__":
     import internal  # 为了单个文件调试
-    main()
+    sys.exit(main())
 else:
     from . import internal  # 同时又能作为包被引入
 

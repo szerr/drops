@@ -18,6 +18,7 @@
 
 import os
 import shutil
+import sys
 
 import drops
 from . import config
@@ -106,7 +107,9 @@ def add_deploy_cmd(s):
 def deploy_cmd(p):
     internal.check_env_arg()
     env = internal.config.Conf().gen_env_by_arg()
-    internal.sync(env, p.force)
+    s = internal.sync(env, p.force)
+    if s:
+        return s
     return internal.docker_compose_cmd("up -d", env)
 
 def add_echo_paths_cmd(s):
@@ -457,7 +460,10 @@ def build_cmd(p):
                     os.makedirs(output_path)
                 bin = b + ' ' + f + ' -o ' + output_path
                 log.debug('run>', b + ' ' + f + ' -o ' + output_path)
-                os.system(bin)
+                exit_code = internal.system(bin)
+                if exit_code:
+                    log.warning("build exit", exit_code)
+                    return exit_code
                 os.chdir(cwd)
                 break
         else:

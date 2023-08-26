@@ -13,3 +13,5 @@ while getopts ":o:" opt; do
 done
 
 cp ../index.html $outpath
+# 如果遇到错误，记得 exit 非0，让上层逻辑停止。
+exit 0 
