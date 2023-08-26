@@ -84,7 +84,7 @@ def ssh_template_pwd(password, port, username, host, b=''):
 
 def rsync2remotely(env, src, target, exclude=[]):
     # rsync 本地同步到远程路径
-    exclude = ' --exclude '.join(['', '.gitignore', '.git', 'drops.yaml', 'src', 'secret'] + exclude)
+    exclude = ' --exclude '.join(['', './.gitignore', './.git', './drops.yaml', './src', './secret'] + exclude)
     if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
@@ -193,7 +193,7 @@ def rsync_image(env, force):
 def rsync_ops(env, force):
     print('------- sync ops -------')
     detection_cmd('rsync')
-    exclude = [i for i in os.listdir(work_path()) if not i in ['docker-compse.yaml', 'docker-compse.yml', 'release', 'image']]
+    exclude = [i for i in os.listdir(work_path()) if not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'image']]
     rsync2remotely(env, '.', container_path(), exclude)
 
 def rsync_var(env, force):

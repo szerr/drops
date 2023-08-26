@@ -356,10 +356,10 @@ def rm_cmd(p):
     env = internal.config.Conf().gen_env_by_arg()
     b = 'rm -f'
     if p.container:
-        if not p.force and not internal.user_confirm('确认删除 ', p.container, '？'):
+        if not p.force and not internal.user_confirm('确认删除 ', ' '.join(p.container), '？'):
             raise er.UserCancel
         b += ' ' + ' '.join(p.container)
-    if not p.force and not internal.user_confirm('确认删除所有容器？'):
+    elif not p.force and not internal.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
     return internal.docker_compose_cmd(b, env)
 
