@@ -18,7 +18,7 @@
 
 import os
 import shutil
-import sys
+import time
 
 import drops
 from . import config
@@ -252,6 +252,7 @@ def logs_cmd(p):
     if p.loop:
         while True:
             internal.docker_compose_cmd(b+p.container, env)
+            time.sleep(1)
     return internal.docker_compose_cmd(b+p.container, env)
 
 
@@ -439,6 +440,8 @@ def add_build_cmd(s):
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
     p.add_argument("-o", '--output',
         help="输出路径，每个项目创建一个文件夹。作为 -o 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
+    p.add_argument("-c", '--clear',
+        help="编译前清理目标文件夹。", default=False, action='store_true')
     internal.add_arg_container(p)
     p.set_defaults(func=build_cmd)
 
@@ -460,7 +463,16 @@ def build_cmd(p):
             log.debug('test', b, f)
             if os.path.isfile(os.path.join(script_path, f)) and internal.command_exists(b):
                 os.chdir(script_path)
-                if not os.path.isdir(output_path):
+                # 编译前是否清理目标目录
+                if os.path.isdir(output_path):
+                    if p.clear:
+                        for i in os.listdir(output_path):
+                            defpath = os.path.join(output_path,i)
+                            if os.path.isdir(defpath):
+                                shutil.rmtree(defpath)
+                            if os.path.isfile(defpath):
+                                os.remove(defpath)
+                else:
                     os.makedirs(output_path)
                 bin = b + ' ' + f + ' -o ' + output_path
                 log.debug('run>', b + ' ' + f + ' -o ' + output_path)
