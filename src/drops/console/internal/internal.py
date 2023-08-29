@@ -17,8 +17,14 @@
 
 
 import os
+import sys
 import time
 import shutil
+import watchdog.events
+import watchdog.observers
+import subprocess
+import asyncio
+import threading
 
 from . import er
 from . import ssh
@@ -443,4 +449,72 @@ def command_exists(b)->bool:
         if os.path.isdir(cmdpath) and b in os.listdir(cmdpath):
             return True
     return False
-        
+
+class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
+    def __init__(self, fn):
+        super(FileSystemEventHander, self).__init__()
+        self.restart = fn
+    def on_any_event(self, event):
+        if event.event_type == 'modified':
+            self.restart(event)
+
+class process():
+    def __init__(self, command):
+        self._command = command
+        self._bin = ' '.join(command)
+        self._process = None
+        self._event_li = []
+        self._run_status = True
+        self._t = threading.Thread(target=self.periodicRestart)
+        self._t.start()
+    
+    def exit(self):
+        self._run_status = False
+        self.stop()
+
+    def start(self):
+        print("start command", self._bin)
+        self._process = subprocess.Popen(self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+
+    def stop(self):
+        if self._process:
+            print("kill command", self._bin)
+            self._process.kill()
+            print("wait...")
+            self._process.wait()
+
+    def restart(self):
+        self.stop()
+        self.start()
+    
+    def add_event(self, e):
+        self._event_li.append(e)
+
+    def periodicRestart(self):
+        # 每次保存可能会触发多个更改事件，增加计时器减少重启的次数。
+        while self._run_status:
+            time.sleep(1)
+            if self._event_li:
+                print("File system event storage:", len(self._event_li))
+                self._event_li = []
+                self.restart()
+
+
+def monitor_path(path, command):
+    observer = watchdog.observers.Observer()
+    if command:
+        p = process(command)
+        p.start()
+        observer.schedule(FileSystemEventHander(p.add_event), path, recursive=True)
+    else:
+        # 如果没有命令参数，收到事件后退出。
+        observer.schedule(FileSystemEventHander(lambda : sys.exit(0)), path, recursive=True)
+    observer.start()
+
+    try:
+        observer.join()
+    except:
+        print("exiting....")
+        p.exit()
+        sys.exit(1)
+    return 0

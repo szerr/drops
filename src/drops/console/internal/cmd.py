@@ -433,6 +433,20 @@ def up_cmd(p):
         b += ' ' + ' '.join(p.container)
     return internal.docker_compose_cmd(b, env)
 
+def add_monitor_path_cmd(s):
+    p = s.add_parser(
+        'monitor-path', help='监视指定路径，接受文件变动后返回，或者执行命令。')
+    p.add_argument("-p", '--path',  type=str,
+                   help="指定监视的路径，默认 ./src", default='./src', nargs='?')
+    p.add_argument('bin',  type=str,
+                   help="要执行的命令。", default=[], nargs='*')
+    internal.add_arg_container(p)
+    p.set_defaults(func=monitor_path_cmd)
+
+def monitor_path_cmd(p):
+    # 监视文件夹，接受文件变动后返回0，或者执行命令。
+    return internal.monitor_path(p.path, p.bin)
+
 def add_build_cmd(s):
     p = s.add_parser(
         'build', help='执行所有项目的 script/build 脚本，优先级：py > sh > bat')
