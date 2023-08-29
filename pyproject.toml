@@ -8,10 +8,7 @@ version = "v1.0.0"
 authors = [
   { name="szerr", email="i@szerr.org" },
 ]
-description = "drops 是总结了我用 docker 的运维经验所做的部署和管理工具。
-便于在没有完善 `CI/CD` 流程的情况下部署服务，版本控制，并提供备份和迁移。
-发布文件通过目录映射到容器里，减少对容器的定制需求。如果有定制需求，容器在部署时现场 `build`，不需要自建镜像源。
-基于 docker-compose 管理服务，基于 rsync 实现的备份和同步。"
+description = "drops 是总结了我用 docker 的运维经验所做的部署和管理工具。便于在没有完善 `CI/CD` 流程的情况下部署服务，版本控制，并提供备份和迁移。发布文件通过目录映射到容器里，减少对容器的定制需求。如果有定制需求，容器在部署时现场 `build`，不需要自建镜像源。基于 docker-compose 管理服务，基于 rsync 实现的备份和同步。"
 
 readme = "README.md"
 requires-python = ">=3.9"
