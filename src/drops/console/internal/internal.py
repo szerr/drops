@@ -492,15 +492,17 @@ class process():
 
     def periodicRestart(self):
         # 每次保存可能会触发多个更改事件，增加计时器减少重启的次数。
-        while self._run_status:
+        while self._run_status and not globa.thread_exit:
             time.sleep(1)
             if self._event_li:
-                print("File system event storage:", len(self._event_li))
+                print("Number of file system events:", len(self._event_li))
                 self._event_li = []
                 self.restart()
 
 
 def monitor_path(path, command):
+    if not os.path.isdir(path) and not os.path.isfile(path):
+        raise er.FileOrFolderDoesNotExist(path)
     observer = watchdog.observers.Observer()
     if command:
         p = process(command)

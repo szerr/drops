@@ -43,6 +43,7 @@ def main():
             try:
                 return args.func(args)
             except Exception as e:
+                internal.globa.thread_exit = True
                 print('Fatal:', type(e).__name__, ':', e)
                 return 1
         else:
@@ -57,4 +58,3 @@ if __name__ == "__main__":
     sys.exit(main())
 else:
     from . import internal  # 同时又能作为包被引入
-

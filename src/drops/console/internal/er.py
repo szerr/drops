@@ -41,6 +41,9 @@ class RemotePathIsNotDropsProject(DropsErr):
     def __str__(self):
         return 'Remote host "%s" is not a drops project, docker-compose.yaml does not exist.' % self.args[0]
 
+class FileOrFolderDoesNotExist(DropsErr):
+    def __str__(self):
+        return 'File or folder does not exist.' + self.args[0]
 
 class UserCancel(DropsErr):
     def __str__(self):
