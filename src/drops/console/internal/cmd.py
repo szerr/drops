@@ -178,25 +178,27 @@ def init_env_debian_cmd(p):
 def add_init_cmd(s):
     p = s.add_parser(
         'init', help='在当前目录初始化项目。')
-    p.set_defaults(func=new_init)
+    p.set_defaults(func=init_cmd)
     p.add_argument("projectName", metavar="projectName",
                    type=str, help="项目名。", nargs='?')
 
-def new_init(p):
+def init_cmd(p):
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    pwd = os.getcwd()
+    cwd = os.getcwd()
     if p.projectName == None:
-        p.projectName = os.path.split(pwd)[-1]
+        p.projectName = os.path.split(cwd)[-1]
 
+    # 复制项目文件
     for i in os.listdir(objPath):
         s = os.path.join(objPath, i)
-        t = os.path.join(pwd, i)
+        t = os.path.join(cwd, i)
         if os.path.isdir(s):
             shutil.copytree(s, t)
         else:
             shutil.copyfile(s, t)
 
-    config.Conf().new(pwd, p.projectName)
+    # 初始化配置
+    config.Conf().new(os.path.join(cwd, globa.args.config), p.projectName)
 
 def add_new_cmd(s):
     p = s.add_parser(
@@ -206,18 +208,18 @@ def add_new_cmd(s):
     p.set_defaults(func=new_cmd)
 
 
-def new_cmd(arg):
+def new_cmd(p):
     from . import config
     from . import internal
 
-    if arg.projectName in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.projectName))
+    if p.projectName in os.listdir(os.getcwd()):
+        internal.Fatal("File exists: ", os.path.join(os.getcwd(), p.projectName))
         return
     objPath = drops.__path__[0]
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), arg.projectName))
-    os.chdir(arg.projectName)
-    config.Conf().new('drops.yaml', arg.projectName)
+                    os.path.join(os.getcwd(), p.projectName))
+    os.chdir(p.projectName)
+    config.Conf().new(os.path.join(p.projectName, globa.args.config), p.projectName)
 
 def add_kill_cmd(s):
     p = s.add_parser(
