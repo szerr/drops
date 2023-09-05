@@ -368,9 +368,11 @@ def docker_compose_cmd(cmd, host):
 def exec(cmd, env):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     if not env.env:
-        print('run local:', cmd)
+        print('run host > local')
+        print('command >', cmd)
         return system(cmd)
-    print('run host: ', env.env, cmd)
+    print('run host >', env.env)
+    print('command >"', cmd)
     c = ssh.Client(env)
     # 在远程路径下执行，要 cd 到项目目录
     stdout, status = c.exec(cmd)
@@ -474,14 +476,14 @@ class process():
         self.stop()
 
     def start(self):
-        print("run >", self._command_str)
+        print("run>", self._command_str)
         self._process = subprocess.Popen(self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
 
     def stop(self):
         if self._process:
-            print("kill >", self._command_str)
+            print("kill>", self._command_str)
             self._process.kill()
-            print("wait...")
+            print("Wait for exit...")
             self._process.wait()
 
     def restart(self):
