@@ -452,7 +452,7 @@ def monitor_path_cmd(p):
 
 def add_build_cmd(s):
     p = s.add_parser(
-        'build', help='执行所有项目的 script/build 脚本，优先级：py > sh > bat')
+        'build', help='执行所有项目的 drops/build 脚本，优先级：py > sh > bat')
     p.add_argument("-p", '--project',
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
     p.add_argument("-d", '--dest',
@@ -469,7 +469,7 @@ def build_cmd(arg):
     cwd = os.getcwd()
     for p_path in pli:
         print('--- build', p_path, '---')
-        script_path = os.path.join('src', p_path, 'script')
+        script_path = os.path.join('src', p_path, 'drops')
         output_path = os.path.join(arg.dest, p_path)
         if not os.path.isdir(script_path):
             log.warning("There is no script for project", p_path)
