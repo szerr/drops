@@ -453,7 +453,7 @@ def monitor_path_cmd(p):
 def add_build_cmd(s):
     p = s.add_parser(
         'build', help='执行所有项目的 drops/build 脚本，优先级：py > sh > bat')
-    p.add_argument("-p", '--project',
+    p.add_argument('project',
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
     p.add_argument("-d", '--dest',
         help="输出路径，每个项目创建一个文件夹。作为 -d 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
