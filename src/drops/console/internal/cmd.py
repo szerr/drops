@@ -132,13 +132,27 @@ def add_exec_cmd(s):
                    type=str, help="容器名")
     p.add_argument('cmds',
                    help="要执行的命令。", type=str, nargs='+')
+    p.add_argument('-r', '--restart', default=False, action='store_true',
+                   help="restart on failure. interval 3 seconds.")
     p.set_defaults(func=exec_cmd)
 
 
 def exec_cmd(p):
     env = internal.config.Conf().gen_env_by_arg()
-    return internal.exec(internal.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env)
+    failed_times = 0
+    while True:
+        status = internal.exec(internal.docker_cmd_template(
+        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
+        if p.restart:
+            if status:
+                failed_times += 1
+                sleep = failed_times % 60
+                print('exit status: %d, sleep: %ds....'%(status, sleep))
+                time.sleep(sleep)
+            else:
+                failed_times=0
+        else:
+            break
 
 def add_env_cmd(s):
     p = s.add_parser(

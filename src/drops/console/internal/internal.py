@@ -365,7 +365,7 @@ def docker_compose_cmd(cmd, host):
     return exec(docker_cmd_template(cmd), host)
 
 
-def exec(cmd, env):
+def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
     stdout = ""
