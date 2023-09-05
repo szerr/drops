@@ -437,17 +437,19 @@ def up_cmd(p):
 
 def add_monitor_path_cmd(s):
     p = s.add_parser(
-        'monitor-path', help='监视指定路径，接受文件变动后返回，或者执行命令。')
+        'monitor-path', help='监视指定路径，接收文件更改事件后返回，或循环执行命令。')
     p.add_argument("-p", '--path',  type=str,
                    help="指定监视的路径，默认 ./src", default='./src', nargs='?')
-    p.add_argument('bin',  type=str,
-                   help="要执行的命令。", default=[], nargs='*')
+    p.add_argument("-i", '--intervals',  type=int,
+                   help="重启命令的间隔时间，单位秒。默认5s。", default=5, nargs='?')
+    p.add_argument('command',  type=str,
+                   help="要执行的命令，遇到事件后杀掉并重启。", default=[], nargs='*')
     internal.add_arg_container(p)
     p.set_defaults(func=monitor_path_cmd)
 
 def monitor_path_cmd(p):
     # 监视文件夹，接受文件变动后返回0，或者执行命令。
-    return internal.monitor_path(p.path, p.bin)
+    return internal.monitor_path(p.path, p.command, p.intervals)
 
 def add_build_cmd(s):
     p = s.add_parser(

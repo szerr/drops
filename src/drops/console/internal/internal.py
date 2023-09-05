@@ -459,9 +459,10 @@ class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
             self.restart(event)
 
 class process():
-    def __init__(self, command):
-        self._command = command
-        self._bin = ' '.join(command)
+    def __init__(self, command, intervals):
+        self._intervals = intervals # 重启间隔时间
+        self._command_str = ' '.join(command)
+        self._command = [i for i in self._command_str.split(' ') if i] # 形成参数数组
         self._process = None
         self._event_li = []
         self._run_status = True
@@ -473,12 +474,12 @@ class process():
         self.stop()
 
     def start(self):
-        print("start command", self._bin)
+        print("run >", self._command_str)
         self._process = subprocess.Popen(self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
 
     def stop(self):
         if self._process:
-            print("kill command", self._bin)
+            print("kill >", self._command_str)
             self._process.kill()
             print("wait...")
             self._process.wait()
@@ -493,19 +494,19 @@ class process():
     def periodicRestart(self):
         # 每次保存可能会触发多个更改事件，增加计时器减少重启的次数。
         while self._run_status and not globa.thread_exit:
-            time.sleep(1)
+            time.sleep(self._intervals)
             if self._event_li:
                 print("Number of file system events:", len(self._event_li))
                 self._event_li = []
                 self.restart()
 
 
-def monitor_path(path, command):
+def monitor_path(path, command, intervals):
     if not os.path.isdir(path) and not os.path.isfile(path):
         raise er.FileOrFolderDoesNotExist(path)
     observer = watchdog.observers.Observer()
     if command:
-        p = process(command)
+        p = process(command, intervals)
         p.start()
         observer.schedule(FileSystemEventHander(p.add_event), path, recursive=True)
     else:
