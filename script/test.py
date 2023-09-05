@@ -28,11 +28,11 @@ base_bin = 'drops --debug '
 
 binLi = [
     # 远程部署
-    '-e production -H example.org env add',
+    '-e production -H example.drops.icu env add',
     'env ls',
     '-e production env change',
     '-e production env remove',
-    '-H example.org -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e production -E utf-8 -d /srv/drops -c drops.yaml env add',
+    '-H example.drops.icu -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e production -E utf-8 -d /srv/drops -c drops.yaml env add',
     'env ls',
     '-e production init-debian-env',
     'project name example',

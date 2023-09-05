@@ -30,26 +30,28 @@ from . import log
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
-    p.add_argument("dirName",  type=str, help="目录名，如果没有项目名会作为默认项目名。")
-    p.add_argument("projectName",  type=str,
+    p.add_argument("dir_name",  type=str, help="目录名，如果没有项目名会作为默认项目名。")
+    p.add_argument("project_name",  type=str,
                    help="项目名。", default='', nargs='?')
     p.set_defaults(func=new_cmd)
 
 
 def new_cmd(arg):
-    if arg.dirName in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dirName))
+    if arg.dir_name in os.listdir(os.getcwd()):
+        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dir_name))
         return 1
     objPath = drops.__path__[0]
+    # 复制示例项目到目标路径
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), arg.dirName))
-    os.chdir(arg.dirName)
-    c = config.Conf().open()
-    if arg.projectName:
-        c.set_project_name(arg.projectName)
+                    os.path.join(os.getcwd(), arg.dir_name))
+    # 切换到项目目录
+    os.chdir(arg.dir_name)
+    # 创建配置文件
+    c = config.Conf()
+    if arg.project_name:
+        c.new(globa.args.config, arg.project_name)
     else:
-        c.set_project_name(arg.dirName)
-    c.save()
+        c.new(globa.args.config, arg.dir_name)
     return 0
 
 def add_backup_cmd(s):
@@ -215,28 +217,6 @@ def init_cmd(p):
 
     # 初始化配置
     config.Conf().new(os.path.join(cwd, globa.args.config), p.projectName)
-    return 0
-
-def add_new_cmd(s):
-    p = s.add_parser(
-        'new', help='Create a drops project.')
-    p.add_argument("projectName",  type=str,
-                   help="项目名。", default='', nargs='?')
-    p.set_defaults(func=new_cmd)
-
-
-def new_cmd(p):
-    from . import config
-    from . import internal
-
-    if p.projectName in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), p.projectName))
-        return
-    objPath = drops.__path__[0]
-    shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), p.projectName))
-    os.chdir(p.projectName)
-    config.Conf().new(os.path.join(p.projectName, globa.args.config), p.projectName)
     return 0
 
 def add_kill_cmd(s):
@@ -475,23 +455,22 @@ def add_build_cmd(s):
         'build', help='执行所有项目的 script/build 脚本，优先级：py > sh > bat')
     p.add_argument("-p", '--project',
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
-    p.add_argument("-o", '--output',
-        help="输出路径，每个项目创建一个文件夹。作为 -o 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
+    p.add_argument("-d", '--dest',
+        help="输出路径，每个项目创建一个文件夹。作为 -d 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
     p.add_argument("-c", '--clear',
         help="编译前清理目标文件夹。", default=False, action='store_true')
     internal.add_arg_container(p)
     p.set_defaults(func=build_cmd)
 
-def build_cmd(p):
-    pli = p.project
+def build_cmd(arg):
+    pli = arg.project
     if not pli:
         pli = os.listdir('src/')
     cwd = os.getcwd()
-    status = 0
     for p_path in pli:
         print('--- build', p_path, '---')
         script_path = os.path.join('src', p_path, 'script')
-        output_path = os.path.join(p.output, p_path)
+        output_path = os.path.join(arg.dest, p_path)
         if not os.path.isdir(script_path):
             log.warning("There is no script for project", p_path)
             continue
@@ -503,7 +482,7 @@ def build_cmd(p):
                 os.chdir(script_path)
                 # 编译前是否清理目标目录
                 if os.path.isdir(output_path):
-                    if p.clear:
+                    if arg.clear:
                         for i in os.listdir(output_path):
                             defpath = os.path.join(output_path,i)
                             if os.path.isdir(defpath):
@@ -512,18 +491,17 @@ def build_cmd(p):
                                 os.remove(defpath)
                 else:
                     os.makedirs(output_path)
-                bin = b + ' ' + f + ' -o ' + output_path
-                log.debug('run>', b + ' ' + f + ' -o ' + output_path)
+                bin = b + ' ' + f + ' -d ' + output_path
+                log.debug('run>', bin)
                 exit_code = internal.system(bin)
                 if exit_code:
-                    status = exit_code
-                    log.warning("build exit", exit_code)
+                    # log.warning("build exit", exit_code)
                     return exit_code
                 os.chdir(cwd)
                 break
         else:
             log.warning("No supported build script found.")
-    return status
+    return 0
 
 # debug 模式下可用的命令：
 def add_clean_up_cmd(s):

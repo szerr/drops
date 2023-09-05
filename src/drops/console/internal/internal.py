@@ -172,7 +172,7 @@ def system(b):
     if exit_code:
         if exit_code > 255:
             exit_code = exit_code / 256
-    return exit_code
+    return int(exit_code)
 
 def ssh_shell(env, b):
     detection_cmd('ssh')

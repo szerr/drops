@@ -1,8 +1,8 @@
 outpath=../replase
 
-while getopts ":o:" opt; do
+while getopts ":d:" opt; do
   case $opt in
-    o)
+    d)
       outpath=$OPTARG
       ;;
     ?) 
