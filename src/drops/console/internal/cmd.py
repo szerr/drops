@@ -39,7 +39,7 @@ def add_new_cmd(s):
 def new_cmd(arg):
     if arg.dirName in os.listdir(os.getcwd()):
         internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dirName))
-        return
+        return 1
     objPath = drops.__path__[0]
     shutil.copytree(os.path.join(objPath, 'docker_ops'),
                     os.path.join(os.getcwd(), arg.dirName))
@@ -50,6 +50,7 @@ def new_cmd(arg):
     else:
         c.set_project_name(arg.dirName)
     c.save()
+    return 0
 
 def add_backup_cmd(s):
     p = s.add_parser(
@@ -122,6 +123,7 @@ def deploy_echo_paths_cmd(p):
     print('容器路径，docker-compose.yaml 所在文件夹:', internal.container_path())
     print('发布路径，应用程序文件夹:', internal.release_path())
     print('volumes 路径，应用程序数据文件夹:', internal.volumes_path())
+    return 0
 
 def add_exec_cmd(s):
     p = s.add_parser(
@@ -135,7 +137,7 @@ def add_exec_cmd(s):
 
 def exec_cmd(p):
     env = internal.config.Conf().gen_env_by_arg()
-    internal.exec(internal.docker_cmd_template(
+    return internal.exec(internal.docker_cmd_template(
         "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env)
 
 def add_env_cmd(s):
@@ -161,7 +163,7 @@ def env_cmd(a):
         config.Conf().ls()
     else:
         config.Conf().ls()
-
+    return 0
 
 def add_init_env_debian_cmd(s):
     p = s.add_parser(
@@ -173,7 +175,7 @@ def init_env_debian_cmd(p):
     internal.check_env_arg()
     env = internal.config.Conf().gen_env_by_arg()
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    internal.exec(bin, env)
+    return internal.exec(bin, env)
 
 def add_init_cmd(s):
     p = s.add_parser(
@@ -199,6 +201,7 @@ def init_cmd(p):
 
     # 初始化配置
     config.Conf().new(os.path.join(cwd, globa.args.config), p.projectName)
+    return 0
 
 def add_new_cmd(s):
     p = s.add_parser(
@@ -220,6 +223,7 @@ def new_cmd(p):
                     os.path.join(os.getcwd(), p.projectName))
     os.chdir(p.projectName)
     config.Conf().new(os.path.join(p.projectName, globa.args.config), p.projectName)
+    return 0
 
 def add_kill_cmd(s):
     p = s.add_parser(
@@ -266,7 +270,7 @@ def add_nginx_force_reload_cmd(s):
 
 def nginx_force_reload_cmd(p):
     env = internal.config.Conf().gen_env_by_arg()
-    internal.exec(internal.docker_cmd_template(
+    return internal.exec(internal.docker_cmd_template(
         "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
 
 def add_nginx_reload_cmd(s):
@@ -300,6 +304,7 @@ def project_cmd(p):
     else:
         for k, i in c._data['project'].items():
             print(k, ': ', i, sep='')
+    return 0
 
 def add_ps_cmd(s):
     p = s.add_parser(
@@ -468,6 +473,7 @@ def build_cmd(p):
     if not pli:
         pli = os.listdir('src/')
     cwd = os.getcwd()
+    status = 0
     for p_path in pli:
         print('--- build', p_path, '---')
         script_path = os.path.join('src', p_path, 'script')
@@ -496,12 +502,14 @@ def build_cmd(p):
                 log.debug('run>', b + ' ' + f + ' -o ' + output_path)
                 exit_code = internal.system(bin)
                 if exit_code:
+                    status = exit_code
                     log.warning("build exit", exit_code)
                     return exit_code
                 os.chdir(cwd)
                 break
         else:
             log.warning("No supported build script found.")
+    return status
 
 # debug 模式下可用的命令：
 def add_clean_up_cmd(s):
@@ -525,6 +533,7 @@ def new_clean_up(p):
             shutil.rmtree(t)
         else:
             os.remove(t)
+    return 0
 
 def add_undeploy_cmd(s):
     p = s.add_parser(
@@ -538,9 +547,14 @@ def undeploy_cmd(p):
     if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
     env = internal.config.Conf().gen_env_by_arg()
+    status = 0
     print('---------- kill ----------')
-    internal.docker_compose_cmd('kill', env)
+    status = internal.docker_compose_cmd('kill', env)
+    if status:
+        return status
     print('--------- rm -f ---------')
-    internal.docker_compose_cmd('rm -f', env)
+    status = internal.docker_compose_cmd('rm -f', env)
+    if status:
+        return
     print('-------- rm -rf %s --------' % internal.container_path())
-    internal.exec('rm -rf %s' % internal.container_path(), env)
+    return internal.exec('rm -rf %s' % internal.container_path(), env)

@@ -367,20 +367,19 @@ def docker_compose_cmd(cmd, host):
 
 def exec(cmd, env):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
+    status = 0
+    stdout = ""
     if not env.env:
         print('run host > local')
         print('command >', cmd)
-        return system(cmd)
-    print('run host >', env.env)
-    print('command >"', cmd)
-    c = ssh.Client(env)
-    # 在远程路径下执行，要 cd 到项目目录
-    stdout, status = c.exec(cmd)
-    if status != 0:
-        print('----------------- fail -----------------')
-        print(stdout, status)
-        raise er.CmdExecutionError(cmd + ', code=' + str(status))
-    return 0
+        status = system(cmd)
+    else:
+        print('run host >', env.env)
+        print('command >"', cmd)
+        c = ssh.Client(env)
+        # 在远程路径下执行，要 cd 到项目目录
+        stdout, status = c.exec(cmd)
+    return status
 
 
 def user_confirm(*l):

@@ -41,11 +41,12 @@ def main():
     if 'func' in args:
         if not args.debug:
             try:
-                return args.func(args)
+                status = args.func(args)
+                return status
             except Exception as e:
                 internal.globa.thread_exit = True
                 print('Fatal:', type(e).__name__, ':', e)
-                return 1
+                return 126
         else:
             internal.globa.debug_model = True
             return args.func(args)
