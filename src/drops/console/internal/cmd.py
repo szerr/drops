@@ -455,8 +455,9 @@ def add_build_cmd(s):
         'build', help='执行所有项目的 drops/build 脚本，优先级：py > sh > bat')
     p.add_argument('project',
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
+    # 因为 bash 
     p.add_argument("-d", '--dest',
-        help="输出路径，每个项目创建一个文件夹。作为 -d 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
+        help="输出目录的绝对路径，drops 会给每个项目创建一个目录，作为 --dest 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
     p.add_argument("-c", '--clear',
         help="编译前清理目标文件夹。", default=False, action='store_true')
     internal.add_arg_container(p)
@@ -469,29 +470,28 @@ def build_cmd(arg):
     cwd = os.getcwd()
     for p_path in pli:
         print('--- build', p_path, '---')
-        script_path = os.path.join('src', p_path, 'drops')
-        output_path = os.path.join(arg.dest, p_path)
-        if not os.path.isdir(script_path):
+        script_dir = os.path.join('src', p_path, 'drops')
+        output_dir = os.path.join(arg.dest, p_path)
+        if not os.path.isdir(script_dir):
             log.warning("There is no script for project", p_path)
             continue
 
+        # 支持的脚本类型，按优先级排列
         for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
             f = 'build.'+e
             log.debug('test', b, f)
-            if os.path.isfile(os.path.join(script_path, f)) and internal.command_exists(b):
-                os.chdir(script_path)
+            if os.path.isfile(os.path.join(script_dir, f)) and internal.command_exists(b):
+                os.chdir(script_dir)
                 # 编译前是否清理目标目录
-                if os.path.isdir(output_path):
+                if os.path.isdir(output_dir):
                     if arg.clear:
-                        for i in os.listdir(output_path):
-                            defpath = os.path.join(output_path,i)
-                            if os.path.isdir(defpath):
-                                shutil.rmtree(defpath)
-                            if os.path.isfile(defpath):
-                                os.remove(defpath)
+                        shutil.rmtree(output_dir)
+                        os.makedirs(output_dir)
                 else:
-                    os.makedirs(output_path)
-                bin = b + ' ' + f + ' -d ' + output_path
+                    os.makedirs(output_dir)
+
+                # 传给脚本输出目录的绝对路径
+                bin = b + ' ' + f + ' --dest ' + os.path.abspath(output_dir)
                 log.debug('run>', bin)
                 exit_code = internal.system(bin)
                 if exit_code:
