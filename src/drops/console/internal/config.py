@@ -31,7 +31,16 @@ class Environment():
         self.password = password
         self.env = env
         self.encoding = encoding
-        self.deploy_path = deploy_path
+        self._deploy_path = deploy_path
+    def set_deploy_path(self, path):
+        self._deploy_path = path
+    def get_deploy_path(self):
+        if not self._deploy_path:
+            if globa.conf.project_name():
+                return '/srv/drops/' + globa.conf.project_name()
+            else:
+                raise er.NoProjectNameOrDeploymentSet
+        return self._deploy_path
     def to_conf(self):
         data = {
             'host':self.host,
@@ -39,24 +48,22 @@ class Environment():
             'username':self.username,
             'encoding':self.encoding
             }
-        if self.deploy_path:
-            data['deploy_path'] = self.deploy_path
+        if self._deploy_path:
+            data['deploy_path'] = self._deploy_path
         if self.password:
             data['password'] = self.password
         if self.identity_file:
             data['identity_file'] = self.identity_file
         return data
     def __str__(self) -> str:
-        return str({'host':self.host, 'port':self.port, 'username':self.username, 'identity_file':self.identity_file, 'password':'*', 'env':self.env, 'encoding':self.encoding, 'deploy_path':self.deploy_path})
-
-def gen_environment_by_arg(args):
-    return Environment(host=args.host, port=args.port, username=args.username, identity_file=args.identity_file, password=args.password, env=args.env, encoding=args.encoding, deploy_path=args.deploy_path)
-
+        return str({'host':self.host, 'port':self.port, 'username':self.username, 'identity_file':self.identity_file, 'password':'*', 'env':self.env, 'encoding':self.encoding, 'deploy_path':self._deploy_path})
 
 class Conf():
     # 封装配置文件
     def __init__(self):
-        self._data=None
+        self._data={
+            'env':{}
+        }
 
     def open(self, path=None):
         if not path:
@@ -76,19 +83,15 @@ class Conf():
     # 方便获取配置对象
     def __getattr__(self, name):
         # 自动获取参数和配置文件内容
-        if not self._data:
-            self.open()
         if name == 'env':
             return {k:Environment(i) for k, i in  self._data['env'].items()}
         return self._data[name].copy()
 
     def set_project_name(self, n):
-        self.open()
         # 设置项目名
         p = self._data.get('project', {})
         p['name'] = n
         self._data['project'] = p
-        self.save()
         return self
 
     def save(self, path=None):
@@ -109,7 +112,7 @@ class Conf():
                     'password':'123456',
                     'identity_file':'~/.ssh/id_ed25519',
                     'encoding':'utf-8',
-                    'deploy_path':'/srv/drops',
+                    'deploy_path':'/srv/drops/'+name,
                 }
             },
             'project':{
@@ -154,7 +157,6 @@ class Conf():
 
     def ls(self, host=None):
         # 输出 host
-        self.open()
         if host is None:
             self.print_env(self._data['env'])
             return self
@@ -162,39 +164,14 @@ class Conf():
         self.print_host(host, self._data['env'][host])
         return self
 
+    def has_env(self, name) -> bool:
+        return name in self._data.get('env', {})
+
     def get_env(self, name) -> Environment:
         # 获取单个 env
-        self.open()
-        if name in self._data['env']:
+        if name in self._data.get('env', {}):
             return Environment(env=name, **self._data['env'][name])
         raise er.EnvDoesNotExist(name)
 
     def project_name(self):
-        return self.open()._data['project']['name']
-
-    def gen_env_by_arg(self):
-        # 结合命令行参数和配置生成 env 对象
-        env = gen_environment_by_arg(globa.args)
-        # 如果参数制定了 env，取配置文件中的 env，按优先级做相应结合
-        if globa.args.env:
-            c = Conf().open()
-            conf = c.get_env(env.env)
-            # host 和 验证信息优先级高于配置文件
-            if not env.host:
-                env.host = conf.host
-            if not env.identity_file and not env.password:
-                if not env.identity_file and conf.identity_file:
-                    env.identity_file = conf.identity_file
-                else:
-                    env.password = conf.password
-
-            # 连接信息如果不是默认值，优先级高于配置文件
-            if env.port == 22:
-                env.port = conf.port
-            if env.username == 'root':
-                env.username = conf.username
-            if env.encoding == 'utf-8':
-                env.encoding = conf.encoding
-            if env.deploy_path == '/srv/drops':
-                env.deploy_path = conf.deploy_path
-        return env
+        return self._data.get('project', {}).get('name', "")

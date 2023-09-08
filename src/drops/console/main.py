@@ -32,11 +32,10 @@ def main():
     # metavar 设置空字符串，为了不以  {cmd1, cmd2, ..} 的形式显示可用子命令。
     subparsers = parser.add_subparsers(metavar="")
     # 初始化命令行参数
-    internal.initCmd(parser, subparsers)
+    internal.init_argument(parser, subparsers)
     # 解析参数
     args = parser.parse_args()
-    internal.globa.args = args
-
+    internal.init_config(args)
     # 调用相关命令，没有命令时打印 help
     if 'func' in args:
         if not args.debug:

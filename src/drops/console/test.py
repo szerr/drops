@@ -86,7 +86,9 @@ def clear():
         shutil.rmtree(test_project_name)
 
 def main():
-    s = os.system('python3 main.py --debug new ' + test_project_name)
+    b = 'python3 main.py --debug new ' + test_project_name
+    print(b)
+    s = os.system(b)
     if s != 0:
         print('create project error.')
         clear()

@@ -33,5 +33,8 @@
 
 debug_model = False
 args = None
+conf = None
+env = None
+
 # 全局维护线程状态，需要退出时设置为 True
 thread_exit = False

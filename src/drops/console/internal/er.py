@@ -36,6 +36,9 @@ class ThisIsNotDropsProject(DropsErr):
         cwd = os.path.split(os.getcwd())[-1]
         return '"%s" is not a drops project, drops.yaml does not exist.' % cwd
 
+class NoProjectNameOrDeploymentSet(DropsErr):
+    def __str__(self):
+        return 'No project name or deployment path set.'
 
 class RemotePathIsNotDropsProject(DropsErr):
     def __str__(self):

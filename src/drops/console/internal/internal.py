@@ -36,7 +36,7 @@ def work_path():
     return os.getcwd()
 
 def deploy_path():
-    return globa.args.deploy_path
+    return globa.env.get_deploy_path()
 
 def volumes_path():
     # volumes路径
@@ -224,7 +224,7 @@ def rsync_volumes(env, force):
 
 def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
-    c = ssh.Client(env)
+    c = ssh.client(env)
     if force: # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
         _, status = c.exec(' mkdir -p ' + container_path())
     else:
@@ -354,7 +354,7 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         rsync_backup(env, s[0], to_path, link_desc)
 
 
-def docker_compose_cmd(cmd, host):
+def docker_compose_cmd(cmd, env):
     # docker_compose_cmd 解析命令行参数，只需要 ssh 部分的参数。
     # 接收一个字符串模板，
     # 拼接进入工作目录的命令，传入 cmd 并返回。
@@ -362,7 +362,7 @@ def docker_compose_cmd(cmd, host):
     for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
-    return exec(docker_cmd_template(cmd), host)
+    return exec(docker_cmd_template(cmd), env)
 
 
 def exec(cmd, env, restart=False):
@@ -370,13 +370,13 @@ def exec(cmd, env, restart=False):
     status = 0
     stdout = ""
     if not env.env:
-        print('run host > local')
+        print('run host > localhost')
         print('command >', cmd)
         status = system(cmd)
     else:
         print('run host >', env.env)
         print('command >"', cmd)
-        c = ssh.Client(env)
+        c = ssh.client(env)
         # 在远程路径下执行，要 cd 到项目目录
         stdout, status = c.exec(cmd)
     return status
@@ -424,7 +424,7 @@ def confirm_drops_project(client):
 
 def confirm_empty_dir(env, path):
     # 返回 path 是否是空目录
-    c = ssh.Client(env)
+    c = ssh.client(env)
     # 目录存在返回0，否则返回1
     while True:
         _, s = c.exec(

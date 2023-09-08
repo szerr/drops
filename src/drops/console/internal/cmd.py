@@ -76,10 +76,10 @@ def add_backup_cmd(s):
 
 def backup_cmd(p):
     internal.check_env_arg()
-    env = internal.config.Conf().gen_env_by_arg()
+    
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
+    return internal.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(
@@ -90,15 +90,15 @@ def add_deploy_https_cert_cmd(s):
 
 
 def deploy_https_cert_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
-    internal.docker_compose_cmd('restart acme.sh', env)
+    internal.docker_compose_cmd('restart acme.sh', globa.env)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
     print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_deploy_cmd(s):
     p = s.add_parser(
@@ -109,11 +109,11 @@ def add_deploy_cmd(s):
 
 def deploy_cmd(p):
     internal.check_env_arg()
-    env = internal.config.Conf().gen_env_by_arg()
-    s = internal.sync(env, p.force)
+    
+    s = internal.sync(globa.env, p.force)
     if s:
         return s
-    return internal.docker_compose_cmd("up -d", env)
+    return internal.docker_compose_cmd("up -d", globa.env)
 
 def add_echo_paths_cmd(s):
     p = s.add_parser(
@@ -140,11 +140,11 @@ def add_exec_cmd(s):
 
 
 def exec_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     failed_times = 0
     while True:
         status = internal.exec(internal.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
+        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), globa.env, p.restart)
         if p.restart:
             if status:
                 failed_times += 1
@@ -170,8 +170,7 @@ def env_cmd(a):
         if a.cmd == 'add':
             if not globa.args.host:
                 raise er.ArgsError("The -H(--host) argument is required.")
-        env = config.gen_environment_by_arg(globa.args)
-        c.set_env(globa.args.env, env).save()
+        c.set_env(globa.args.env, globa.env).save()
     elif a.cmd == 'remove':
         internal.check_env_arg()
         c.remove_env(globa.args.env).save()
@@ -189,9 +188,9 @@ def add_init_env_debian_cmd(s):
 
 def init_env_debian_cmd(p):
     internal.check_env_arg()
-    env = internal.config.Conf().gen_env_by_arg()
+    
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    return internal.exec(bin, env)
+    return internal.exec(bin, globa.env)
 
 def add_init_cmd(s):
     p = s.add_parser(
@@ -227,11 +226,11 @@ def add_kill_cmd(s):
 
 
 def kill_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_logs_cmd(s):
     p = s.add_parser(
@@ -245,15 +244,15 @@ def add_logs_cmd(s):
     p.set_defaults(func=logs_cmd)
 
 def logs_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'logs '
     if p.follow:
         b += '-f '
     if p.loop:
         while True:
-            internal.docker_compose_cmd(b+p.container, env)
+            internal.docker_compose_cmd(b+p.container, globa.env)
             time.sleep(1)
-    return internal.docker_compose_cmd(b+p.container, env)
+    return internal.docker_compose_cmd(b+p.container, globa.env)
 
 
 def add_nginx_force_reload_cmd(s):
@@ -263,9 +262,9 @@ def add_nginx_force_reload_cmd(s):
 
 
 def nginx_force_reload_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     return internal.exec(internal.docker_cmd_template(
-        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
+        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), globa.env)
 
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
@@ -274,8 +273,8 @@ def add_nginx_reload_cmd(s):
 
 
 def nginx_reload_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
-    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', env)
+    
+    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', globa.env)
 
 def add_project_cmd(s):
     p = s.add_parser(
@@ -307,8 +306,8 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
-    return internal.docker_compose_cmd("ps", env)
+    
+    return internal.docker_compose_cmd("ps", globa.env)
 
 
 def add_pull_cmd(s):
@@ -319,11 +318,11 @@ def add_pull_cmd(s):
 
 
 def pull_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 
 def add_redeploy_cmd(s):
@@ -335,9 +334,9 @@ def add_redeploy_cmd(s):
 
 def redeploy_cmd(p):
     internal.check_env_arg()
-    env = internal.config.Conf().gen_env_by_arg()
-    internal.sync(env, p.force)
-    return internal.docker_compose_cmd("up -d --build --remove-orphans", env)
+    
+    internal.sync(globa.env, p.force)
+    return internal.docker_compose_cmd("up -d --build --remove-orphans", globa.env)
 
 def add_restart_cmd(s):
     p = s.add_parser(
@@ -347,11 +346,11 @@ def add_restart_cmd(s):
 
 
 def restart_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_rm_cmd(s):
     p = s.add_parser(
@@ -362,7 +361,7 @@ def add_rm_cmd(s):
 
 
 def rm_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'rm -f'
     if p.container:
         if not p.force and not internal.user_confirm('确认删除 ', ' '.join(p.container), '？'):
@@ -370,7 +369,7 @@ def rm_cmd(p):
         b += ' ' + ' '.join(p.container)
     elif not p.force and not internal.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_start_cmd(s):
     p = s.add_parser(
@@ -380,11 +379,11 @@ def add_start_cmd(s):
 
 
 def start_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_stop_cmd(s):
     p = s.add_parser(
@@ -394,11 +393,11 @@ def add_stop_cmd(s):
 
 
 def stop_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_sync_cmd(s):
     p = s.add_parser(
@@ -416,8 +415,8 @@ var, volumes 建议只用来同步初始数据。
 
 def sync_cmd(p):
     internal.check_env_arg()
-    env = internal.config.Conf().gen_env_by_arg()
-    return internal.sync(env, p.force, p.obj)
+    
+    return internal.sync(globa.env, p.force, p.obj)
 
 
 def add_up_cmd(s):
@@ -428,11 +427,11 @@ def add_up_cmd(s):
 
 
 def up_cmd(p):
-    env = internal.config.Conf().gen_env_by_arg()
+    
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, env)
+    return internal.docker_compose_cmd(b, globa.env)
 
 def add_monitor_path_cmd(s):
     p = s.add_parser(
@@ -455,7 +454,7 @@ def add_build_cmd(s):
         'build', help='执行所有项目的 drops/build 脚本，优先级：py > sh > bat')
     p.add_argument('project',
         help="指定一个或多个项目.", default=[], nargs='*', type=str)
-    # 因为 bash 
+    # 因为 bash
     p.add_argument("-d", '--dest',
         help="输出目录的绝对路径，drops 会给每个项目创建一个目录，作为 --dest 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
     p.add_argument("-c", '--clear',
@@ -538,15 +537,15 @@ def undeploy_cmd(p):
     internal.check_env_arg()
     if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
-    env = internal.config.Conf().gen_env_by_arg()
+    
     status = 0
     print('---------- kill ----------')
-    status = internal.docker_compose_cmd('kill', env)
+    status = internal.docker_compose_cmd('kill', globa.env)
     if status:
         return status
     print('--------- rm -f ---------')
-    status = internal.docker_compose_cmd('rm -f', env)
+    status = internal.docker_compose_cmd('rm -f', globa.env)
     if status:
         return
     print('-------- rm -rf %s --------' % internal.container_path())
-    return internal.exec('rm -rf %s' % internal.container_path(), env)
+    return internal.exec('rm -rf %s' % internal.container_path(), globa.env)

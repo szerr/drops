@@ -20,7 +20,7 @@ import paramiko
 import os
 
 
-class Client():
+class client():
     def __init__(self, env):
         self.encoding = env.encoding
         self._client = SSHClient()
