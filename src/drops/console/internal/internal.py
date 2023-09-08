@@ -45,7 +45,7 @@ def volumes_path():
 def container_path():
     # 容器路径，如果没有配置 env，始终返回当前目录
     if globa.args.env:
-        return deploy_path() + '/' + config.Conf().project_name() + '/'
+        return deploy_path() + '/' + config.Conf().project_name()
     return work_path()
 
 
