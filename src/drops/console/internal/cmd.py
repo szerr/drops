@@ -56,22 +56,23 @@ def new_cmd(arg):
 
 def add_backup_cmd(s):
     p = s.add_parser(
-        'backup', help='基于 rsync --del --link-dest 的增量备份。更改参数前先测试，以免写错删掉已有的备份文件。')
-    internal.add_arg_force(p)
+        'backup', help='基于 rsync 的增量备份。')
     p.set_defaults(func=backup_cmd)
     p.add_argument('obj', type=str, default='volumes', choices=[
         'docker',  'release', 'servers', 'var', 'volumes', 'ops', 'all'], nargs='?',
-        help='''同步的文件夹。docker: docker-compose，ops 是除 var 和 volumes 的所有。''')
+        help='''备份项目。docker: docker-compose，ops 是除 var 和 volumes 的所有。默认 volumes''')
     p.add_argument('-t', '--target',
                    help="目标路径", default='backup')
     p.add_argument('-d', '--time-format', default='%Y-%m-%d_%H:%M:%S',
                    help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
     p.add_argument('-l', '--link-dest',
                    help='未更改时链接到指定文件夹。默认是备份路径中符合 format 排序后最大的文件夹。')
-    p.add_argument('-k', '--keep',
+    p.add_argument('-k', '--keep-backups',
                    type=int, help="保留的备份个数，只有 format 开启时启用。本次备份也算一个。-1 保留所有。", default='-1')
     p.add_argument("-c", '--cod',
                    help="在目标路径创建项目名命名的文件夹", default=False, action='store_true')
+    p.add_argument("-f", '--force',
+                   help="不提示已存在的备份，不同步的文件会被覆盖或删除。", default=False, action='store_true')
 
 
 def backup_cmd(p):
@@ -79,7 +80,7 @@ def backup_cmd(p):
     
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep, p.cod, p.force)
+    return internal.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(

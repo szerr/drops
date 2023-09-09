@@ -23,52 +23,58 @@ import shutil
 import watchdog.events
 import watchdog.observers
 import subprocess
-import asyncio
 import threading
 
 from . import er
 from . import ssh
 from . import config
 from . import globa
+from . import helper
+
 
 def work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
     return os.getcwd()
 
+
 def deploy_path():
     return globa.env.get_deploy_path()
 
+
 def volumes_path():
     # volumes路径
-    return deploy_path() + '/' + config.Conf().project_name() + '/volumes/'
+    return helper.join_path(deploy_path(), 'volumes')
+
 
 def container_path():
     # 容器路径，如果没有配置 env，始终返回当前目录
     if globa.args.env:
-        return deploy_path() + '/' + config.Conf().project_name()
+        return deploy_path()
     return work_path()
 
 
-def servers_path():
-    return container_path() + 'servers/'
+def image_path():
+    return helper.join_path(container_path(), 'image')
 
 
-def docker_path():
-    return container_path() + 'docker-compose.yaml'
+def docker_compose_path():
+    return helper.join_path(container_path(), 'docker-compose.yaml')
 
 
 def release_path():
     # 发布路径
-    return container_path() + 'release/'
+    return helper.join_path(container_path(), 'release')
 
 
 def var_path():
-    return container_path() + 'var/'
+    return helper.join_path(container_path(), 'var')
+
 
 def check_env_arg():
     # 检查 env 参数是否存在
     if not globa.args.env:
         raise er.ArgsError("The -e(--env) argument is required.")
+
 
 def docker_cmd_template(cmd):
     # 执行 docker-compose 命令的模板
@@ -94,16 +100,20 @@ def rsync2remotely(env, src, target, exclude=[]):
     if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, key_path='<key_path>', port=env.port, username=env.username, host=env.host, exclude=exclude)
+            src=src, target=target, key_path='<key_path>', port=env.port, username=env.username, host=env.host,
+            exclude=exclude)
         b = b.format(
-            src=src, target=target, key_path=env.identity_file, port=env.port, username=env.username, host=env.host, exclude=exclude)
+            src=src, target=target, key_path=env.identity_file, port=env.port, username=env.username, host=env.host,
+            exclude=exclude)
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
-            src=src, target=target, password='<password>', port=env.port, username=env.username, host=env.host, exclude=exclude)
+            src=src, target=target, password='<password>', port=env.port, username=env.username, host=env.host,
+            exclude=exclude)
         b = b.format(
-            src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host, exclude=exclude)
+            src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host,
+            exclude=exclude)
     print(echo_b)
     return system(b)
 
@@ -113,13 +123,13 @@ def rsync2local(env, src, target):
     if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" {username}@{host}:{src} {target}'.format(
             src=src, target=target, port=env.port, username=env.username, host=env.host)
-        print(b%('<key_path>'))
+        print(b % ('<key_path>'))
         b = b % env.identity_file
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p %s rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=env.port, username=env.username, host=env.host)
-        print(b%('<password>'))
+            src=src, target=target, port=env.port, username=env.username, host=env.host)
+        print(b % ('<password>'))
         b = b % env.password
     return system(b)
 
@@ -128,13 +138,13 @@ def rsync2local_link_dest(env, src, target, link_dest):
     # rsync 远程同步到本地，设置链接
     if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i %s" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=env.port, username=env.username, host=env.host, link_dest=link_dest)
+            src=src, target=target, port=env.port, username=env.username, host=env.host, link_dest=link_dest)
         print(b)
         b = b % env.identity_file
     else:
         detection_cmd('sshpass')
         b = 'sshpass -p {%s} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target,  port=env.port, username=env.username, host=env.host, link_dest=link_dest)
+            src=src, target=target, port=env.port, username=env.username, host=env.host, link_dest=link_dest)
         print(b)
         b = b % env.password
     return system(b)
@@ -143,18 +153,22 @@ def rsync2local_link_dest(env, src, target, link_dest):
 def Fatal(*e):
     print("Fatal!", *e)
 
+
 # 多个命令会用到的参数
 def add_container_arg(p):
     p.add_argument('container', type=str,
                    help="docker container name", nargs=1)
 
+
 def add_arg_container(p):
     p.add_argument('container',
                    help="要执行操作的容器。", type=str, nargs='*')
 
+
 def add_arg_force(p):
     p.add_argument("-f", '--force',
                    help="强制执行，不再提示确认。", default=False, action='store_true')
+
 
 def detection_cmd(*bl):
     # 确认命令是否存在
@@ -166,6 +180,7 @@ def detection_cmd(*bl):
             raise er.CmdNotExist(b)
     return True
 
+
 def system(b):
     # os.system 在不同平台的行为不同，特别在 linux 下，是一个 16 位数，如果直接返回给 shell，会被截取低 8 位。这里做平台兼容。
     exit_code = os.system(b)
@@ -173,6 +188,7 @@ def system(b):
         if exit_code > 255:
             exit_code = exit_code / 256
     return int(exit_code)
+
 
 def ssh_shell(env, b):
     detection_cmd('ssh')
@@ -195,7 +211,7 @@ def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'docker-compose.yaml', docker_path())
+    return rsync2remotely(env, 'docker-compose.yaml', docker_compose_path())
 
 
 def rsync_image(env, force):
@@ -203,11 +219,14 @@ def rsync_image(env, force):
     detection_cmd('rsync')
     return rsync2remotely(env, 'image', container_path())
 
+
 def rsync_ops(env, force):
     print('------- sync ops -------')
     detection_cmd('rsync')
-    exclude = [i for i in os.listdir(work_path()) if not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'image']]
+    exclude = [i for i in os.listdir(work_path()) if
+               not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'image']]
     return rsync2remotely(env, '.', container_path(), exclude)
+
 
 def rsync_var(env, force):
     if not confirm_empty_dir(env, var_path()):
@@ -222,10 +241,11 @@ def rsync_volumes(env, force):
             raise er.UserCancel
     return rsync2remotely(env, 'volumes', container_path())
 
+
 def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
     c = ssh.client(env)
-    if force: # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
+    if force:  # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
         _, status = c.exec(' mkdir -p ' + container_path())
     else:
         _, status = c.exec(' mkdir -p ' + deploy_path())
@@ -258,7 +278,7 @@ def rsync_backup(env, src, target, link_desc=''):
     return rsync2local(env, src, target)
 
 
-def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep=-1, cod=False, force=False):
+def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep_backups=-1, cod=False, force=False):
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
@@ -269,89 +289,81 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         backup2dir = os.path.join(backup2dir, '{obj}')
         # 如果设置了 link_desc
     # 需要备份的目录列表
-    srcLi = []
+    back_li = []
     if obj == 'all':
-        srcLi = [
+        back_li = [
             [release_path(), backup2dir.format(obj='release')],
-            [servers_path(), backup2dir.format(obj='servers')],
+            [image_path(), backup2dir.format(obj='servers')],
             [var_path(), backup2dir.format(obj='var')],
             [volumes_path(), backup2dir.format(obj='volumes')],
-            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+            [docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
         ]
     elif obj == 'ops':
-        srcLi = [
+        back_li = [
             [release_path(), backup2dir.format(obj='release')],
-            [servers_path(), backup2dir.format(obj='servers')],
-            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+            [image_path(), backup2dir.format(obj='servers')],
+            [docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
         ]
     elif obj == 'docker':
-        srcLi = [
-            [docker_path(), backup2dir.format(obj='docker-compose.yaml')],
+        back_li = [
+            [docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
         ]
     elif obj == 'release':
-        srcLi = [
+        back_li = [
             [release_path(), backup2dir.format(obj='release')],
         ]
     elif obj == 'servers':
-        srcLi = [
-            [servers_path(), backup2dir.format(obj='servers')],
+        back_li = [
+            [image_path(), backup2dir.format(obj='servers')],
         ]
     elif obj == 'var':
-        srcLi = [
+        back_li = [
             [var_path(), backup2dir.format(obj='var')],
         ]
     elif obj == 'volumes':
-        srcLi = [
+        back_li = [
             [volumes_path(), backup2dir.format(obj='volumes')],
         ]
     else:
         raise er.UnsupportedBackupObject(obj)
+    for source_path, target_path in back_li:
+        if not os.path.isdir(target_path):
+            os.mkdir(target_path)
+        # 生成带有时间的备份路径
+        backup_time = time.strftime(time_format, time.localtime(time.time()))
+        backup2path = os.path.join(target_path, backup_time)
+        exist_li = os.listdir(target_path)
+        exist_li.sort(reverse=True)
 
-    for s in srcLi:
-        to_path = s[1]
-        if not os.path.isdir(s[1]):
-            os.mkdir(s[1])
-        if not link_desc:
-            # 组装 link_desc
-            lsdir = []
-            # 排除不符合 format 的目录
-            for i in os.listdir(s[1]):
-                try:
-                    time.strptime(i, time_format)
-                    lsdir.append(i)
-                except ValueError:
-                    pass
-            if not lsdir:
-                print("%s 路径下没有找到符合 %s 的文件夹，--link-dest 功能关闭。" %
-                      (s[1], time_format))
-            # 备份文件夹的时间命名
-            tar_time = time.strftime(
-                time_format, time.localtime(time.time()))
-            if tar_time in lsdir:
-                lsdir.remove(tar_time)  # 排除掉本次要备份的文件夹
-            if lsdir:
-                lsdir.sort(reverse=True)
-                # link 目录是排序后最大的目录
-                link_dir = lsdir[0]
-                link_desc = os.path.join(work_path(), s[1], link_dir)
-                if keep > 0:
-                    # 本次新增的备份也算一个
-                    rm_dir = lsdir[keep-1:]
-                    for r in rm_dir:
-                        rd = os.path.join(s[1], r)
-                        print('delete:', rd)
-                        # docker-compose.yaml 是文件，其他是目录
-                        if os.path.isdir(rd):
-                            shutil.rmtree(rd)
-                        else:
-                            os.remove(rd)
-                    if keep == 1:
-                        link_desc = ''
-            to_path = os.path.join(s[1], tar_time)
-        if not force and os.path.isdir(to_path) and os.listdir(to_path):
-            if not user_confirm("本地目录 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % (to_path)):
+        if not force and os.path.isdir(backup2path) and os.listdir(backup2path):
+            if not user_confirm("备份路径 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % backup2path):
                 raise er.UserCancel
-        rsync_backup(env, s[0], to_path, link_desc)
+
+        # 如果本次要备份的路径已存在，移除掉，避免重复计算
+        if backup_time in exist_li:
+            exist_li.remove(backup_time)
+        if keep_backups > 0:  # 删除不需要保留的备份
+            for r in exist_li[keep_backups:]:
+                rd = os.path.join(target_path, r)
+                print('delete backup:', rd)
+                # docker-compose.yaml 是文件，其他是目录
+                if os.path.isdir(rd):
+                    shutil.rmtree(rd)
+                else:
+                    os.remove(rd)
+            exist_li = exist_li[keep_backups:]
+
+        if not link_desc:  # 没有传入 link desc，自动寻找最新备份执行 link desc。
+            if exist_li:
+                # link 目录是排序后最大的目录
+                link_dir = exist_li[0]
+                link_desc = os.path.join(work_path(), target_path, link_dir)
+            else:
+                print("%s 路径下没有找到合适的备份文件夹，--link-dest 功能关闭。" % target_path)
+        s = rsync_backup(env, source_path, backup2path, link_desc)
+        if s:
+            return s
+    return 0
 
 
 def docker_compose_cmd(cmd, env):
@@ -409,7 +421,7 @@ def confirm_drops_project(client):
         return True
 
     b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
-        container_path()+'/docker-compose.yaml', container_path()+'/servers')
+        container_path() + '/docker-compose.yaml', container_path() + '/servers')
 
     while True:
         _, s = client.exec(b, False)
@@ -445,31 +457,35 @@ def confirm_empty_dir(env, path):
         return True
     return False
 
-def command_exists(b)->bool:
+
+def command_exists(b) -> bool:
     for cmdpath in os.environ['PATH'].split(':'):
         if os.path.isdir(cmdpath) and b in os.listdir(cmdpath):
             return True
     return False
 
+
 class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
     def __init__(self, fn):
         super(FileSystemEventHander, self).__init__()
         self.restart = fn
+
     def on_any_event(self, event):
         if event.event_type == 'modified':
             self.restart(event)
 
+
 class process():
     def __init__(self, command, intervals):
-        self._intervals = intervals # 重启间隔时间
+        self._intervals = intervals  # 重启间隔时间
         self._command_str = ' '.join(command)
-        self._command = [i for i in self._command_str.split(' ') if i] # 形成参数数组
+        self._command = [i for i in self._command_str.split(' ') if i]  # 形成参数数组
         self._process = None
         self._event_li = []
         self._run_status = True
         self._t = threading.Thread(target=self.periodicRestart)
         self._t.start()
-    
+
     def exit(self):
         self._run_status = False
         self.stop()
@@ -488,7 +504,7 @@ class process():
     def restart(self):
         self.stop()
         self.start()
-    
+
     def add_event(self, e):
         self._event_li.append(e)
 
@@ -512,7 +528,7 @@ def monitor_path(path, command, intervals):
         observer.schedule(FileSystemEventHander(p.add_event), path, recursive=True)
     else:
         # 如果没有命令参数，收到事件后退出。
-        observer.schedule(FileSystemEventHander(lambda : sys.exit(0)), path, recursive=True)
+        observer.schedule(FileSystemEventHander(lambda: sys.exit(0)), path, recursive=True)
     observer.start()
 
     try:
