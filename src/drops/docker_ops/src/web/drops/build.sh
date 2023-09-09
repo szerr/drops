@@ -1,5 +1,5 @@
 #!/bin/sh
-dest="../replase" 
+dest="../replase/"
 
 help_str="
 参数说明：

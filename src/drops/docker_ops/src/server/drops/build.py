@@ -10,7 +10,7 @@ def system(command):
 def main():
     parser = argparse.ArgumentParser(description=DESC)
     parser.add_argument('-d','--dest',
-                    help="Place the output into <path>.", type=str, default='../replase')
+                    help="Place the output into <path>.", type=str, default='../replase/')
     arg = parser.parse_args()
     for d in os.listdir(CMD_PATH):
         print('build', d)
