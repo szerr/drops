@@ -117,3 +117,7 @@ class EnvHostSimult(DropsErr):
 class EnvParameterRequired(DropsErr):
     def __str__(self) -> str:
         return 'The env(-e, --env) parameter is required.'
+    
+class NoDefaultEnvironmentIsSet(DropsErr):
+    def __str__(self) -> str:
+        return 'No default environment is set.'

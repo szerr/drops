@@ -116,7 +116,8 @@ class Conf():
                 }
             },
             'project':{
-                'name': name
+                'name': name,
+                # 'default_env': 'dev'
             },
         }
         self.save(path)
@@ -175,3 +176,10 @@ class Conf():
 
     def project_name(self):
         return self._data.get('project', {}).get('name', "")
+    # def has_default_env(self):
+    #     return self._data.get('project', {}).get('default_env', False) and True
+    # def get_default_env(self)->str:
+    #     default_env = self._data.get('project', {}).get('default_env', None)
+    #     if default_env:
+    #         return self.get_env(default_env)
+    #     raise er.NoDefaultEnvironmentIsSet

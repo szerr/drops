@@ -63,14 +63,14 @@ drops -e dev deploy # 同步项目目录到 /srv/drops/example 并启动容器�
 新建`drops`项目后，会生成一些预定的文件夹，其中：
 
 - `src` 是项目的源码路径，每个项目一个文件夹。每个项目对应一个到多个容器。项目的 Dockerfile 也应该放在这里。
-- `image` 下存放每个容器的依赖文件，配置等。需要对第三方容器做 build 的 Dockerfile 放在这里。
+- `servers` 下存放每个容器的依赖文件，配置等。需要对第三方容器做 build 的 Dockerfile 放在这里。
 - `releace` 存放项目的可执行文件，静态文件等，并映射到容器中执行。使用 `drops build` 执行编译发布到这个文件夹。
 - `volumes` 容器落地的数据，可以用 `drops backup` 备份。
 - `backup` 如果没有，运行`drops backup` 会创建。存放备份文件。
 - `var` 容器暂存的文件，cache、log 等不重要的数据。
 - `secret` 存放验证文件
 
-**注意！不要将应用数据，容器生成的文件放到 image、releace，`docker sync` 同步时远程路径会被删除或覆盖。**
+**注意！不要将应用数据，容器生成的文件放到 servers、releace，`docker sync` 同步时远程路径会被删除或覆盖。**
 
 ## 与项目集成
 
@@ -78,11 +78,11 @@ drops -e dev deploy # 同步项目目录到 /srv/drops/example 并启动容器�
 
 ## 数据管理
 
-配置文件映射到 `image` 下并做版本控制。
+配置文件映射到 `servers` 下并做版本控制。
 程序生成的文件，不需要做保留的如日志，映射到 `./var/` 下。
 落地的文件，数据库等映射到 `./volumes/<服务名>`，这里支持做备份。
 
-不确定的话，考虑数据是否需要版本控制，需要的话就放到`image`下。不需要的放到源码中，`build`时复制到 `release`。
+不确定的话，考虑数据是否需要版本控制，需要的话就放到`servers`下。不需要的放到源码中，`build`时复制到 `release`。
 
 ## 命令
 
@@ -120,11 +120,11 @@ drops -e dev deploy # 同步项目目录到 /srv/drops/example 并启动容器�
 
 `docker-compose.yaml` 中可以看到`nginx`，`crond`，`acme.sh`。
 
-`image/nginx/lib` 中有几个简单的配置
+`servers/nginx/lib` 中有几个简单的配置
 
-`image/nginx/nginx.conf` 可以选择开启的配置
+`servers/nginx/nginx.conf` 可以选择开启的配置
 
-`image/crond/periodic_example/backup.sh` 是一个异地备份脚本。
+`servers/crond/periodic_example/backup.sh` 是一个异地备份脚本。
 
 ## 致谢
 

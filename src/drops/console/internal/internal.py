@@ -53,8 +53,8 @@ def container_path():
     return work_path()
 
 
-def image_path():
-    return helper.join_path(container_path(), 'image')
+def servers_path():
+    return helper.join_path(container_path(), 'servers')
 
 
 def docker_compose_path():
@@ -68,12 +68,6 @@ def release_path():
 
 def var_path():
     return helper.join_path(container_path(), 'var')
-
-
-def check_env_arg():
-    # 检查 env 参数是否存在
-    if not globa.args.env:
-        raise er.ArgsError("The -e(--env) argument is required.")
 
 
 def docker_cmd_template(cmd):
@@ -214,17 +208,17 @@ def rsync_docker(env, force=False):
     return rsync2remotely(env, 'docker-compose.yaml', docker_compose_path())
 
 
-def rsync_image(env, force):
-    print('------- sync image -------')
+def rsync_servers(env, force):
+    print('------- sync servers -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'image', container_path())
+    return rsync2remotely(env, 'servers', container_path())
 
 
 def rsync_ops(env, force):
     print('------- sync ops -------')
     detection_cmd('rsync')
     exclude = [i for i in os.listdir(work_path()) if
-               not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'image']]
+               not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
     return rsync2remotely(env, '.', container_path(), exclude)
 
 
@@ -261,8 +255,8 @@ def sync(env, force=False, obj='ops'):
         return rsync_docker(*arg)
     elif obj == 'release':
         return rsync_release(*arg)
-    elif obj == 'image':
-        return rsync_image(*arg)
+    elif obj == 'servers':
+        return rsync_servers(*arg)
     elif obj == 'var':
         return rsync_var(*arg)
     elif obj == 'volumes':
@@ -288,20 +282,20 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         # 备份目录是备份对象下的时间目录
         backup2dir = os.path.join(backup2dir, '{obj}')
         # 如果设置了 link_desc
-    # 需要备份的目录列表
+    # 需要备份的目录列表，路径结尾加上 / 代表同步目录下的文件，rsync 不会再创建一层目录。
     back_li = []
     if obj == 'all':
         back_li = [
-            [release_path(), backup2dir.format(obj='release')],
-            [image_path(), backup2dir.format(obj='servers')],
-            [var_path(), backup2dir.format(obj='var')],
-            [volumes_path(), backup2dir.format(obj='volumes')],
+            [release_path()+'/', backup2dir.format(obj='release')],
+            [servers_path() + '/', backup2dir.format(obj='servers')],
+            [var_path()+'/', backup2dir.format(obj='var')],
+            [volumes_path()+'/', backup2dir.format(obj='volumes')],
             [docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
         ]
     elif obj == 'ops':
         back_li = [
-            [release_path(), backup2dir.format(obj='release')],
-            [image_path(), backup2dir.format(obj='servers')],
+            [release_path()+'/', backup2dir.format(obj='release')],
+            [servers_path() + '/', backup2dir.format(obj='servers')],
             [docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
         ]
     elif obj == 'docker':
@@ -310,19 +304,19 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         ]
     elif obj == 'release':
         back_li = [
-            [release_path(), backup2dir.format(obj='release')],
+            [release_path()+'/', backup2dir.format(obj='release')],
         ]
     elif obj == 'servers':
         back_li = [
-            [image_path(), backup2dir.format(obj='servers')],
+            [servers_path() + '/', backup2dir.format(obj='servers')],
         ]
     elif obj == 'var':
         back_li = [
-            [var_path(), backup2dir.format(obj='var')],
+            [var_path()+'/', backup2dir.format(obj='var')],
         ]
     elif obj == 'volumes':
         back_li = [
-            [volumes_path(), backup2dir.format(obj='volumes')],
+            [volumes_path()+'/', backup2dir.format(obj='volumes')],
         ]
     else:
         raise er.UnsupportedBackupObject(obj)

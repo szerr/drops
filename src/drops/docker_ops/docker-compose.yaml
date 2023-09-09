@@ -11,9 +11,9 @@ services:
       # nginx 日志
       - ./var/log/nginx:/var/log/nginx
       # nginx 相关配置
-      - ./image/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./image/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./image/nginx/lib:/etc/nginx/lib:ro
+      - ./servers/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./servers/nginx/lib:/etc/nginx/lib:ro
       # 项目文件映射
       - ./release/web:/var/www/html:ro
     labels:
@@ -27,13 +27,13 @@ services:
       # - http_server
 
       # acme.sh:
-      #   image: neilpang/acme.sh:latest
+      #   servers: neilpang/acme.sh:latest
       #   command: daemon
       #   volumes:
       #     - ./volumes/acme.sh/acmeout:/acme.sh
       #     - ./volumes/nginx/well-known:/var/www/.well-known
       #     - /var/run/docker.sock:/var/run/docker.sock
-      #     - ./image/acme.sh/redeploy-ssl:/usr/bin/redeploy-ssl:ro
+      #     - ./servers/acme.sh/redeploy-ssl:/usr/bin/redeploy-ssl:ro
       #   environment:
       #     - DEPLOY_DOCKER_CONTAINER_LABEL=sh.acme.autoload.domain=drops
       #     - DEPLOY_DOCKER_CONTAINER_KEY_FILE=/etc/nginx/ssl/drops/key.pem
@@ -51,17 +51,17 @@ services:
       # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
       - ./secret/ssh:/root/.ssh
       # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
-      - ./image/drops/cron/15min:/etc/periodic/15min:ro
-      - ./image/drops/cron/hourly:/etc/periodic/hourly:ro
-      - ./image/drops/cron/daily:/etc/periodic/daily:ro
-      - ./image/drops/cron/weekly:/etc/periodic/weekly:ro
-      - ./image/drops/cron/monthly:/etc/periodic/monthly:ro
+      - ./servers/drops/cron/15min:/etc/periodic/15min:ro
+      - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
+      - ./servers/drops/cron/daily:/etc/periodic/daily:ro
+      - ./servers/drops/cron/weekly:/etc/periodic/weekly:ro
+      - ./servers/drops/cron/monthly:/etc/periodic/monthly:ro
       # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       # 需要的可执行文件映射。
-      - ./image/drops/bin:/usr/local/bin:ro
+      - ./servers/drops/bin:/usr/local/bin:ro
       # 参考 cron_example 目录，有关定时增量备份的示例脚本。
       # - /srv/backup:/srv/backup
-      # - ./image/drops/drops:/srv/drops
+      # - ./servers/drops/drops:/srv/drops
     restart: always

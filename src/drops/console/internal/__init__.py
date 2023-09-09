@@ -73,6 +73,8 @@ def init_config(arg):
 
     if arg.env and globa.conf.has_env(arg.env):
         env = globa.conf.get_env(arg.env)
+    # elif globa.conf.has_default_env():
+    #     env = globa.conf.get_default_env()
     else:
         env = config.Environment(host=False, port=22, username='root', env=False, encoding='utf-8', deploy_path='',
                                  identity_file='', password='')

@@ -40,7 +40,7 @@ binLi = [
     '-e production sync',
     '-e production sync volumes',
     '-e production sync var',
-    '-e production sync image',
+    '-e production sync servers',
     '-e production sync release',
     '-e production sync docker',
 

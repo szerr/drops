@@ -21,6 +21,8 @@ import shutil
 import time
 
 import drops
+
+from . import helper
 from . import config
 from . import internal
 from . import er
@@ -76,7 +78,7 @@ def add_backup_cmd(s):
 
 
 def backup_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
@@ -91,7 +93,7 @@ def add_deploy_https_cert_cmd(s):
 
 
 def deploy_https_cert_cmd(p):
-    
+    helper.check_env()
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
@@ -109,7 +111,7 @@ def add_deploy_cmd(s):
 
 
 def deploy_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     
     s = internal.sync(globa.env, p.force)
     if s:
@@ -167,13 +169,13 @@ def add_env_cmd(s):
 def env_cmd(a):
     c = config.Conf().open()
     if a.cmd == 'add' or a.cmd == 'change':
-        internal.check_env_arg()
+        helper.check_env()
         if a.cmd == 'add':
             if not globa.args.host:
                 raise er.ArgsError("The -H(--host) argument is required.")
         c.set_env(globa.args.env, globa.env).save()
     elif a.cmd == 'remove':
-        internal.check_env_arg()
+        helper.check_env()
         c.remove_env(globa.args.env).save()
     elif a.cmd == 'ls':
         config.Conf().ls()
@@ -188,7 +190,7 @@ def add_init_env_debian_cmd(s):
 
 
 def init_env_debian_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
     return internal.exec(bin, globa.env)
@@ -334,7 +336,7 @@ def add_redeploy_cmd(s):
 
 
 def redeploy_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     
     internal.sync(globa.env, p.force)
     return internal.docker_compose_cmd("up -d --build --remove-orphans", globa.env)
@@ -406,16 +408,16 @@ def add_sync_cmd(s):
     internal.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
-        'docker',  'release', 'image', 'var', 'volumes', 'ops'], nargs='?',
+        'docker',  'release', 'servers', 'var', 'volumes', 'ops'], nargs='?',
         help='''同步的对象。
-ops 相当于 docker, release, image；
+ops 相当于 docker, release, servers；
 docker: docker-compose；
 var, volumes 建议只用来同步初始数据。
 同步 var, volumes 会检查远程目录是否为空文件夹，并做相应提示。''')
 
 
 def sync_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     
     return internal.sync(globa.env, p.force, p.obj)
 
@@ -535,7 +537,7 @@ def add_undeploy_cmd(s):
 
 
 def undeploy_cmd(p):
-    internal.check_env_arg()
+    helper.check_env()
     if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
     

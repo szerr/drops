@@ -17,6 +17,8 @@
 
 import os
 
+from . import globa, er
+
 
 def join_path(*p):
     # 用 `/` 字符连接路径
@@ -24,3 +26,9 @@ def join_path(*p):
     for i in p:
         p_li.append('/'.join([i for i in os.path.split(i) if i]))
     return '/'.join(p_li)
+
+
+def check_env():
+    # 检查 env 是否有效
+    if not globa.env.host:
+        raise er.ArgsError("env.host 无效，检查 --host 参数或 env 配置。")
