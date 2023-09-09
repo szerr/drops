@@ -28,9 +28,11 @@ class client():
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         if os.path.isfile('secret/ssh/known_hosts'):
             self._client.load_system_host_keys('secret/ssh/known_hosts')
-        if env.identity_file:
+        # 如果路径中有`~`符，替代成 $HOME
+        identity_file = os.path.expanduser(env.identity_file)
+        if identity_file:
             self._client.connect(
-                env.host, port=env.port, username=env.username, key_filename=env.identity_file)
+                env.host, port=env.port, username=env.username, key_filename=identity_file)
         elif env.password:
             self._client.connect(
                 env.host, port=env.port, username=env.username, password=env.password)
@@ -39,11 +41,11 @@ class client():
             if os.path.isdir('secret/ssh'):
                 for i in os.listdir('secret/ssh'):
                     if i.startswith('id_'):
-                        env.identity_file = i
+                        identity_file = i
                         break
-            if env.identity_file:
+            if identity_file:
                 self._client.connect(
-                    env.host, port=env.port, username=env.username, key_filename=env.identity_file[0])
+                    env.host, port=env.port, username=env.username, key_filename=identity_file)
             else:
                 # 没有的话 paramiko 会寻找 ssh 预设的 key
                 self._client.connect(env.host, port=env.port, username=env.username)
