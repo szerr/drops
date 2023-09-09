@@ -146,7 +146,7 @@ def exec_cmd(p):
     
     failed_times = 0
     while True:
-        status = internal.exec(internal.docker_cmd_template(
+        status = internal.exec(globa.env, internal.docker_cmd_template(
         "exec -T "+p.container + ' ' + ' '.join(p.cmds)), globa.env, p.restart)
         if p.restart:
             if status:
@@ -266,7 +266,7 @@ def add_nginx_force_reload_cmd(s):
 
 def nginx_force_reload_cmd(p):
     
-    return internal.exec(internal.docker_cmd_template(
+    return internal.exec(internal.docker_cmd_template(globa.env,
         "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), globa.env)
 
 def add_nginx_reload_cmd(s):
@@ -309,7 +309,6 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
-    
     return internal.docker_compose_cmd("ps", globa.env)
 
 

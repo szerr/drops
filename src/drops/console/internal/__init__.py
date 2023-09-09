@@ -70,7 +70,6 @@ def init_config(arg):
         globa.conf.open(arg.config)
     else: # 没有配置文件的话，预设一些配置项。
         globa.conf.set_project_name(os.path.split(os.getcwd())[-1])
-
     if arg.env and globa.conf.has_env(arg.env):
         env = globa.conf.get_env(arg.env)
     # elif globa.conf.has_default_env():
@@ -80,7 +79,8 @@ def init_config(arg):
                                  identity_file='', password='')
 
     # 有传参时替换掉对应的 env 属性。参数优先级高于配置文件。
-    env.env = arg.env
+    if arg.env:
+        env.env = arg.env
     # env.host 为 False，ssh.client 执行时调用本地 os.system，在当前文件夹执行。其他情况调用 ssh。
     if arg.host:
         env.host = arg.host

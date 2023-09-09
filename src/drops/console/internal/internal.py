@@ -70,9 +70,9 @@ def var_path():
     return helper.join_path(container_path(), 'var')
 
 
-def docker_cmd_template(cmd):
+def docker_cmd_template(env, cmd):
     # 执行 docker-compose 命令的模板
-    if globa.args.env:
+    if env.host:
         return 'cd ' + container_path() + ' && docker-compose %s' % cmd
     # 如果没有指定 env，在本地执行不需要 cd 
     return 'docker-compose %s' % cmd
@@ -368,14 +368,14 @@ def docker_compose_cmd(cmd, env):
     for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
-    return exec(docker_cmd_template(cmd), env)
+    return exec(docker_cmd_template(env, cmd), env)
 
 
 def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
     stdout = ""
-    if not env.env:
+    if not env.host:
         print('run host > localhost')
         print('command >', cmd)
         status = system(cmd)

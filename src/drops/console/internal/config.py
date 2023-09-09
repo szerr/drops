@@ -117,7 +117,6 @@ class Conf():
             },
             'project':{
                 'name': name,
-                # 'default_env': 'dev'
             },
         }
         self.save(path)
