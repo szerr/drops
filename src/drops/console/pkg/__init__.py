@@ -27,7 +27,9 @@ def init_argument(p, s):
     p.add_argument('-e', '--env',
                    help="Specify the deployment environment. Configured in drops.yaml. Default run in the current directory. ",
                    default=False, nargs='?', type=str)
-    # env 和 host 同时不传，可确保服务在当前目录运行。
+    p.add_argument('-t', '--env-type',
+                   help="local means that the instruction will only be run locally. remove will connect to the remote server.",
+                   default=False, nargs='?', type=str)
     p.add_argument('-H', '--host',
                    help="Connect to host via ssh. By default, execute in the current local directory.", default=False,
                    nargs='?', type=str)

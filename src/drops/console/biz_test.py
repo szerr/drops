@@ -23,6 +23,7 @@ def gen_messy_args():
         encoding='utf-8'+randstr(3),
         deploy_path='/srv/drops/te'+randstr(3),
         config='drops.yaml'+randstr(3),
+        env_type='remove',
     )
     return args
 
@@ -35,6 +36,7 @@ def check_messy_conf(assertTrue, args, conf):
     assertTrue('    password: '+args.password in conf)
     assertTrue('    encoding: '+args.encoding in conf)
     assertTrue('    deploy_path: '+args.deploy_path in conf)
+    assertTrue('    type: '+args.env_type in conf)
 
 class TestNew(unittest.TestCase):
     def setUp(self):

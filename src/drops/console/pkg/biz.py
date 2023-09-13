@@ -34,9 +34,9 @@ from . import globa
 from . import helper
 
 def new_project(name, path):
+    os.chdir(path)
     os.mkdir(name)
-    os.chdir(name)
-    return init_project(name, path)
+    return init_project(name, os.path.join(path, name))
 
 def init_project(name, path):
     objPath = os.path.join(drops.__path__[0], 'docker_ops')

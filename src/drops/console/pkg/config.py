@@ -22,8 +22,10 @@ import os
 from . import globa
 from . import er
 
+
 class Environment():
-    def __init__(self, host, port, username, env, encoding, deploy_path='', identity_file='', password=''):
+    def __init__(self, host, port, username, env, encoding, deploy_path='', identity_file='', password='',
+                 type='remove'):
         self.host = host
         self.port = port
         self.username = username
@@ -32,8 +34,14 @@ class Environment():
         self.env = env
         self.encoding = encoding
         self._deploy_path = deploy_path
+        if type in ('remove', 'local'):
+            self.type = type
+        else:
+            raise er.ArgsError('env can only be local or remove.')
+
     def set_deploy_path(self, path):
         self._deploy_path = path
+
     def get_deploy_path(self):
         if not self._deploy_path:
             if globa.conf.project_name():
@@ -41,13 +49,14 @@ class Environment():
             else:
                 raise er.NoProjectNameOrDeploymentSet
         return self._deploy_path
+
     def to_conf(self):
         data = {
-            'host':self.host,
-            'port':self.port,
-            'username':self.username,
-            'encoding':self.encoding
-            }
+            'host': self.host,
+            'port': self.port,
+            'username': self.username,
+            'encoding': self.encoding
+        }
         if self._deploy_path:
             data['deploy_path'] = self._deploy_path
         if self.password:
@@ -55,17 +64,24 @@ class Environment():
         if self.identity_file:
             data['identity_file'] = self.identity_file
         return data
+
     def __str__(self) -> str:
-        return str({'host':self.host, 'port':self.port, 'username':self.username, 'identity_file':self.identity_file, 'password':'*', 'env':self.env, 'encoding':self.encoding, 'deploy_path':self._deploy_path})
+        return str(
+            {'host': self.host, 'port': self.port, 'username': self.username, 'identity_file': self.identity_file,
+             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self._deploy_path,
+             'type': self.type})
+
 
 def gen_env_by_args(args):
     return Environment(host=args.host, port=args.port, username=args.username, env=args.env, encoding=args.encoding,
-                deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password)
+                       deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password,
+                       type=args.env_type)
+
 class Conf():
     # 封装配置文件
     def __init__(self):
-        self._data={
-            'env':{}
+        self._data = {
+            'env': {}
         }
 
     def open(self, path=None):
@@ -73,7 +89,7 @@ class Conf():
             path = globa.args.config
         with open(path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
-        if 'project' not  in c:
+        if 'project' not in c:
             raise er.ConfigurationFileMissObj('project')
         if 'name' not in c['project']:
             raise er.ConfigurationFileMissObj('project.name')
@@ -86,7 +102,7 @@ class Conf():
     def __getattr__(self, name):
         # 自动获取参数和配置文件内容
         if name == 'env':
-            return {k:Environment(i) for k, i in  self._data['env'].items()}
+            return {k: Environment(i) for k, i in self._data['env'].items()}
         return self._data[name].copy()
 
     def set_project_name(self, n):
@@ -103,50 +119,53 @@ class Conf():
 
     def init_template(self, name):
         self._data = {'env': {
-                'dev':{
-                    'host':'example.org',
-                    'port':'22',
-                    'username':'root',
-                    'password':'123456',
-                    'identity_file':'~/.ssh/id_ed25519',
-                    'encoding':'utf-8',
-                    'deploy_path':'/srv/drops/'+name,
-                }
-            },
-            'project':{
+            'dev': {
+                'host': 'example.org',
+                'port': '22',
+                'username': 'root',
+                'password': '123456',
+                'identity_file': '~/.ssh/id_ed25519',
+                'encoding': 'utf-8',
+                'deploy_path': '/srv/drops/' + name,
+                'type': 'remove',
+            }
+        },
+            'project': {
                 'name': name,
             },
         }
         return self
+
     def new(self, path, name):
         if os.path.isfile(path):
             raise er.ConfigFileAlreadyExists
         self._data = {'env': {
-                'dev':{
-                    'host':'example.org',
-                    'port':'22',
-                    'username':'root',
-                    'password':'123456',
-                    'identity_file':'~/.ssh/id_ed25519',
-                    'encoding':'utf-8',
-                    'deploy_path':'/srv/drops/'+name,
-                }
-            },
-            'project':{
+            'dev': {
+                'host': 'example.org',
+                'port': '22',
+                'username': 'root',
+                'password': '123456',
+                'identity_file': '~/.ssh/id_ed25519',
+                'encoding': 'utf-8',
+                'deploy_path': '/srv/drops/' + name,
+            }
+        },
+            'project': {
                 'name': name,
             },
         }
         self.save(path)
         return self
 
-    def set_env(self, env:Environment):
+    def set_env(self, env: Environment):
         if env.env:
             self._data['env'][env.env] = env.to_conf()
             return self
         else:
             raise er.ArgsError('env name')
+
     def remove_env(self, name):
-        del(self._data['env'][name])
+        del (self._data['env'][name])
         return self
 
     def print_minlength(self, s, length):
@@ -173,7 +192,7 @@ class Conf():
     def print_env(self, env, head=''):
         print(head + 'env:')
         for h, item in env.items():
-            self.print_host(h, item, head+'  ')
+            self.print_host(h, item, head + '  ')
 
     def ls(self, host=None):
         # 输出 host
