@@ -58,6 +58,9 @@ class Environment():
     def __str__(self) -> str:
         return str({'host':self.host, 'port':self.port, 'username':self.username, 'identity_file':self.identity_file, 'password':'*', 'env':self.env, 'encoding':self.encoding, 'deploy_path':self._deploy_path})
 
+def gen_env_by_args(args):
+    return Environment(host=args.host, port=args.port, username=args.username, env=args.env, encoding=args.encoding,
+                deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password)
 class Conf():
     # 封装配置文件
     def __init__(self):
@@ -68,7 +71,6 @@ class Conf():
     def open(self, path=None):
         if not path:
             path = globa.args.config
-        self.path = path
         with open(path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
         if 'project' not  in c:
@@ -94,13 +96,28 @@ class Conf():
         self._data['project'] = p
         return self
 
-    def save(self, path=None):
-        if not path:
-            path = self.path
+    def save(self, path):
         with open(path, 'w') as fd:
             fd.write(yaml.dump(self._data))
         return self
 
+    def init_template(self, name):
+        self._data = {'env': {
+                'dev':{
+                    'host':'example.org',
+                    'port':'22',
+                    'username':'root',
+                    'password':'123456',
+                    'identity_file':'~/.ssh/id_ed25519',
+                    'encoding':'utf-8',
+                    'deploy_path':'/srv/drops/'+name,
+                }
+            },
+            'project':{
+                'name': name,
+            },
+        }
+        return self
     def new(self, path, name):
         if os.path.isfile(path):
             raise er.ConfigFileAlreadyExists
@@ -122,9 +139,12 @@ class Conf():
         self.save(path)
         return self
 
-    def set_env(self, name, env:Environment):
-        self._data['env'][name] = env.to_conf()
-        return self
+    def set_env(self, env:Environment):
+        if env.env:
+            self._data['env'][env.env] = env.to_conf()
+            return self
+        else:
+            raise er.ArgsError('env name')
     def remove_env(self, name):
         del(self._data['env'][name])
         return self

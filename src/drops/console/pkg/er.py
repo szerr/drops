@@ -57,6 +57,9 @@ class ConfigFileAlreadyExists(DropsErr):
     def __str__(self):
         return '%s already exists.' % globa.config_file
 
+class FileOrDirAlreadyExists(DropsErr):
+    def __str__(self):
+        return 'File or directory already exists: ' + ''.join(self.args)
 
 class PwdAndKeyCannotBeEmpty(DropsErr):
     def __str__(self):

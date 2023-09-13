@@ -32,10 +32,10 @@ def main():
     # metavar 设置空字符串，为了不以  {cmd1, cmd2, ..} 的形式显示可用子命令。
     subparsers = parser.add_subparsers(metavar="")
     # 初始化命令行参数
-    internal.init_argument(parser, subparsers)
+    pkg.init_argument(parser, subparsers)
     # 解析参数
     args = parser.parse_args()
-    internal.init_config(args)
+    pkg.init_config(args)
     # 调用相关命令，没有命令时打印 help
     if 'func' in args:
         if not args.debug:
@@ -43,18 +43,18 @@ def main():
                 status = args.func(args)
                 return status
             except Exception as e:
-                internal.globa.thread_exit = True
+                pkg.globa.thread_exit = True
                 print('Fatal:', type(e).__name__, ':', e)
                 return 126
         else:
-            internal.globa.debug_model = True
+            pkg.globa.debug_model = True
             return args.func(args)
     else:
         parser.print_help()
     return 0
 
 if __name__ == "__main__":
-    import internal  # 为了单个文件调试
+    import pkg  # 为了单个文件调试
     sys.exit(main())
 else:
-    from . import internal  # 同时又能作为包被引入
+    from . import pkg  # 同时又能作为包被引入

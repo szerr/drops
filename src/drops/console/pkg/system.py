@@ -87,3 +87,12 @@ class client():
         o, e, s = stdout.read().decode(self.encoding), stderr.read().decode(
             self.encoding), stdout.channel.recv_exit_status()
         return o, e, s
+
+
+def system(b):
+    # os.system 在不同平台的行为不同，特别在 linux 下，是一个 16 位数，如果直接返回给 shell，会被截取低 8 位。这里做平台兼容。
+    exit_code = os.system(b)
+    if exit_code:
+        if exit_code > 255:
+            exit_code = exit_code / 256
+    return int(exit_code)

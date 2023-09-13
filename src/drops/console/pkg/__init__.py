@@ -62,7 +62,7 @@ def init_argument(p, s):
 
 def init_config(arg):
     # 处理全局参数，读取配置文件，生成 config 和 env 到全局变量。
-    internal.globa.args = arg
+    biz.globa.args = arg
     # 生成空的配置对象
     globa.conf = config.Conf()
     # 尝试载入配置

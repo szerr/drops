@@ -24,7 +24,7 @@ import drops
 
 from . import helper
 from . import config
-from . import internal
+from . import biz
 from . import er
 from . import globa
 from . import log
@@ -32,29 +32,24 @@ from . import log
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
-    p.add_argument("dir_name",  type=str, help="目录名，如果没有项目名会作为默认项目名。")
-    p.add_argument("project_name",  type=str,
-                   help="项目名。", default='', nargs='?')
+    p.add_argument("project_name",  type=str, help="项目名。")
     p.set_defaults(func=new_cmd)
 
 
-def new_cmd(arg):
-    if arg.dir_name in os.listdir(os.getcwd()):
-        internal.Fatal("File exists: ", os.path.join(os.getcwd(), arg.dir_name))
-        return 1
-    objPath = drops.__path__[0]
-    # 复制示例项目到目标路径
-    shutil.copytree(os.path.join(objPath, 'docker_ops'),
-                    os.path.join(os.getcwd(), arg.dir_name))
-    # 切换到项目目录
-    os.chdir(arg.dir_name)
-    # 创建配置文件
-    c = config.Conf()
-    if arg.project_name:
-        c.new(globa.args.config, arg.project_name)
-    else:
-        c.new(globa.args.config, arg.dir_name)
-    return 0
+def new_cmd(p):
+    if p.project_name in os.listdir(os.getcwd()):
+        raise er.FileOrDirAlreadyExists(p.project_name)
+    return biz.new_project(p.project_name, '.')
+
+
+def add_init_cmd(s):
+    p = s.add_parser(
+        'init', help='在当前目录初始化项目。')
+    p.set_defaults(func=init_cmd)
+    p.add_argument("project_name", help="项目名。")
+
+def init_cmd(p):
+    return biz.init_project(p.project_name, '.')
 
 def add_backup_cmd(s):
     p = s.add_parser(
@@ -82,7 +77,7 @@ def backup_cmd(p):
     
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return internal.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
+    return biz.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(
@@ -92,31 +87,31 @@ def add_deploy_https_cert_cmd(s):
     p.set_defaults(func=deploy_https_cert_cmd)
 
 
+def add_deploy_cmd(s):
+    p = s.add_parser(
+        'deploy', help='部署并启动服务。')
+    biz.add_arg_force(p)
+    p.set_defaults(func=deploy_cmd)
+
 def deploy_https_cert_cmd(p):
     helper.check_env()
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
-    internal.docker_compose_cmd('restart acme.sh', globa.env)
+    biz.docker_compose_cmd('restart acme.sh', globa.env)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
     print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
-    return internal.docker_compose_cmd(b, globa.env)
-
-def add_deploy_cmd(s):
-    p = s.add_parser(
-        'deploy', help='部署并启动服务。')
-    internal.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
+    return biz.docker_compose_cmd(b, globa.env)
 
 
 def deploy_cmd(p):
     helper.check_env()
     
-    s = internal.sync(globa.env, p.force)
+    s = biz.sync(globa.env, p.force)
     if s:
         return s
-    return internal.docker_compose_cmd("up -d", globa.env)
+    return biz.docker_compose_cmd("up -d", globa.env)
 
 def add_echo_paths_cmd(s):
     p = s.add_parser(
@@ -125,9 +120,9 @@ def add_echo_paths_cmd(s):
 
 
 def deploy_echo_paths_cmd(p):
-    print('容器路径，docker-compose.yaml 所在文件夹:', internal.container_path())
-    print('发布路径，应用程序文件夹:', internal.release_path())
-    print('volumes 路径，应用程序数据文件夹:', internal.volumes_path())
+    print('容器路径，docker-compose.yaml 所在文件夹:', biz.container_path())
+    print('发布路径，应用程序文件夹:', biz.release_path())
+    print('volumes 路径，应用程序数据文件夹:', biz.volumes_path())
     return 0
 
 def add_exec_cmd(s):
@@ -146,7 +141,7 @@ def exec_cmd(p):
     
     failed_times = 0
     while True:
-        status = internal.exec(globa.env, internal.docker_cmd_template(
+        status = biz.exec(globa.env, biz.docker_cmd_template(
         "exec -T "+p.container + ' ' + ' '.join(p.cmds)), globa.env, p.restart)
         if p.restart:
             if status:
@@ -193,38 +188,12 @@ def init_env_debian_cmd(p):
     helper.check_env()
     
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    return internal.exec(bin, globa.env)
-
-def add_init_cmd(s):
-    p = s.add_parser(
-        'init', help='在当前目录初始化项目。')
-    p.set_defaults(func=init_cmd)
-    p.add_argument("projectName", metavar="projectName",
-                   type=str, help="项目名。", nargs='?')
-
-def init_cmd(p):
-    objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    cwd = os.getcwd()
-    if p.projectName == None:
-        p.projectName = os.path.split(cwd)[-1]
-
-    # 复制项目文件
-    for i in os.listdir(objPath):
-        s = os.path.join(objPath, i)
-        t = os.path.join(cwd, i)
-        if os.path.isdir(s):
-            shutil.copytree(s, t)
-        else:
-            shutil.copyfile(s, t)
-
-    # 初始化配置
-    config.Conf().new(os.path.join(cwd, globa.args.config), p.projectName)
-    return 0
+    return biz.exec(bin, globa.env)
 
 def add_kill_cmd(s):
     p = s.add_parser(
         'kill', help='杀掉容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=kill_cmd)
 
 
@@ -233,7 +202,7 @@ def kill_cmd(p):
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_logs_cmd(s):
     p = s.add_parser(
@@ -253,9 +222,9 @@ def logs_cmd(p):
         b += '-f '
     if p.loop:
         while True:
-            internal.docker_compose_cmd(b+p.container, globa.env)
+            biz.docker_compose_cmd(b+p.container, globa.env)
             time.sleep(1)
-    return internal.docker_compose_cmd(b+p.container, globa.env)
+    return biz.docker_compose_cmd(b+p.container, globa.env)
 
 
 def add_nginx_force_reload_cmd(s):
@@ -266,7 +235,7 @@ def add_nginx_force_reload_cmd(s):
 
 def nginx_force_reload_cmd(p):
     
-    return internal.exec(internal.docker_cmd_template(globa.env,
+    return biz.exec(biz.docker_cmd_template(globa.env,
         "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), globa.env)
 
 def add_nginx_reload_cmd(s):
@@ -277,7 +246,7 @@ def add_nginx_reload_cmd(s):
 
 def nginx_reload_cmd(p):
     
-    return internal.docker_compose_cmd('exec -T nginx nginx -s reload', globa.env)
+    return biz.docker_compose_cmd('exec -T nginx nginx -s reload', globa.env)
 
 def add_project_cmd(s):
     p = s.add_parser(
@@ -309,13 +278,13 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
-    return internal.docker_compose_cmd("ps", globa.env)
+    return biz.docker_compose_cmd("ps", globa.env)
 
 
 def add_pull_cmd(s):
     p = s.add_parser(
         'pull', help='拉取容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=pull_cmd)
 
 
@@ -324,26 +293,26 @@ def pull_cmd(p):
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 
 def add_redeploy_cmd(s):
     p = s.add_parser(
         'redeploy', help='部署并启动服务，重新编译容器，移除不再用的容器。')
-    internal.add_arg_force(p)
+    biz.add_arg_force(p)
     p.set_defaults(func=redeploy_cmd)
 
 
 def redeploy_cmd(p):
     helper.check_env()
     
-    internal.sync(globa.env, p.force)
-    return internal.docker_compose_cmd("up -d --build --remove-orphans", globa.env)
+    biz.sync(globa.env, p.force)
+    return biz.docker_compose_cmd("up -d --build --remove-orphans", globa.env)
 
 def add_restart_cmd(s):
     p = s.add_parser(
         'restart', help='重启容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=restart_cmd)
 
 
@@ -352,13 +321,13 @@ def restart_cmd(p):
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_rm_cmd(s):
     p = s.add_parser(
         'rm', help='删除容器。')
-    internal.add_arg_container(p)
-    internal.add_arg_force(p)
+    biz.add_arg_container(p)
+    biz.add_arg_force(p)
     p.set_defaults(func=rm_cmd)
 
 
@@ -366,17 +335,17 @@ def rm_cmd(p):
     
     b = 'rm -f'
     if p.container:
-        if not p.force and not internal.user_confirm('确认删除 ', ' '.join(p.container), '？'):
+        if not p.force and not biz.user_confirm('确认删除 ', ' '.join(p.container), '？'):
             raise er.UserCancel
         b += ' ' + ' '.join(p.container)
-    elif not p.force and not internal.user_confirm('确认删除所有容器？'):
+    elif not p.force and not biz.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_start_cmd(s):
     p = s.add_parser(
         'start', help='启动容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=start_cmd)
 
 
@@ -385,12 +354,12 @@ def start_cmd(p):
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_stop_cmd(s):
     p = s.add_parser(
         'stop', help='停止容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=stop_cmd)
 
 
@@ -399,12 +368,12 @@ def stop_cmd(p):
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_sync_cmd(s):
     p = s.add_parser(
         'sync', help='同步当前项目到远程路径')
-    internal.add_arg_force(p)
+    biz.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
         'docker',  'release', 'servers', 'var', 'volumes', 'ops'], nargs='?',
@@ -418,13 +387,13 @@ var, volumes 建议只用来同步初始数据。
 def sync_cmd(p):
     helper.check_env()
     
-    return internal.sync(globa.env, p.force, p.obj)
+    return biz.sync(globa.env, p.force, p.obj)
 
 
 def add_up_cmd(s):
     p = s.add_parser(
         'up', help='创建和启动容器。')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=up_cmd)
 
 
@@ -433,7 +402,7 @@ def up_cmd(p):
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return internal.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, globa.env)
 
 def add_monitor_path_cmd(s):
     p = s.add_parser(
@@ -444,12 +413,12 @@ def add_monitor_path_cmd(s):
                    help="重启命令的间隔时间，单位秒。默认5s。", default=5, nargs='?')
     p.add_argument('command',  type=str,
                    help="要执行的命令，遇到事件后杀掉并重启。", default=[], nargs='*')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=monitor_path_cmd)
 
 def monitor_path_cmd(p):
     # 监视文件夹，接受文件变动后返回0，或者执行命令。
-    return internal.monitor_path(p.path, p.command, p.intervals)
+    return biz.monitor_path(p.path, p.command, p.intervals)
 
 def add_build_cmd(s):
     p = s.add_parser(
@@ -461,7 +430,7 @@ def add_build_cmd(s):
         help="输出目录的绝对路径，drops 会给每个项目创建一个目录，作为 --dest 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
     p.add_argument("-c", '--clear',
         help="编译前清理目标文件夹。", default=False, action='store_true')
-    internal.add_arg_container(p)
+    biz.add_arg_container(p)
     p.set_defaults(func=build_cmd)
 
 def build_cmd(arg):
@@ -481,7 +450,7 @@ def build_cmd(arg):
         for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
             f = 'build.'+e
             log.debug('test', b, f)
-            if os.path.isfile(os.path.join(script_dir, f)) and internal.command_exists(b):
+            if os.path.isfile(os.path.join(script_dir, f)) and biz.command_exists(b):
                 os.chdir(script_dir)
                 # 编译前是否清理目标目录
                 if os.path.isdir(output_dir):
@@ -494,7 +463,7 @@ def build_cmd(arg):
                 # 传给脚本输出目录的绝对路径
                 bin = b + ' ' + f + ' --dest ' + os.path.abspath(output_dir)
                 log.debug('run>', bin)
-                exit_code = internal.system(bin)
+                exit_code = biz.system(bin)
                 if exit_code:
                     # log.warning("build exit", exit_code)
                     return exit_code
@@ -508,12 +477,12 @@ def build_cmd(arg):
 def add_clean_up_cmd(s):
     p = s.add_parser(
         'clean', help='删除当前目录下 drops 所有相关文件。')
-    internal.add_arg_force(p)
+    biz.add_arg_force(p)
     p.set_defaults(func=new_clean_up)
 
 
 def new_clean_up(p):
-    if not p.force and not internal.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
+    if not p.force and not biz.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
         raise er.UserCancel
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     pwd = os.getcwd()
@@ -531,23 +500,23 @@ def new_clean_up(p):
 def add_undeploy_cmd(s):
     p = s.add_parser(
         'undeploy', help='清理掉服务器上的容器和项目')
-    internal.add_arg_force(p)
+    biz.add_arg_force(p)
     p.set_defaults(func=undeploy_cmd)
 
 
 def undeploy_cmd(p):
     helper.check_env()
-    if not p.force and not internal.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+internal.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
+    if not p.force and not biz.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+biz.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
     
     status = 0
     print('---------- kill ----------')
-    status = internal.docker_compose_cmd('kill', globa.env)
+    status = biz.docker_compose_cmd('kill', globa.env)
     if status:
         return status
     print('--------- rm -f ---------')
-    status = internal.docker_compose_cmd('rm -f', globa.env)
+    status = biz.docker_compose_cmd('rm -f', globa.env)
     if status:
         return
-    print('-------- rm -rf %s --------' % internal.container_path())
-    return internal.exec('rm -rf %s' % internal.container_path(), globa.env)
+    print('-------- rm -rf %s --------' % biz.container_path())
+    return biz.exec('rm -rf %s' % biz.container_path(), globa.env)
