@@ -13,6 +13,7 @@ class virtualObj():
         return self._data[item]
 
 def gen_messy_args():
+    # 随意的填一填命令行参数
     args = virtualObj(
         env='production'+randstr(3),
         host='example.drops.icu'+randstr(3),
@@ -23,7 +24,7 @@ def gen_messy_args():
         encoding='utf-8'+randstr(3),
         deploy_path='/srv/drops/te'+randstr(3),
         config='drops.yaml'+randstr(3),
-        env_type='remove',
+        env_type='remote',
     )
     return args
 

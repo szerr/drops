@@ -25,7 +25,7 @@ from . import er
 
 class Environment():
     def __init__(self, host, port, username, env, encoding, deploy_path='', identity_file='', password='',
-                 type='remove'):
+                 type='remote'):
         self.host = host
         self.port = port
         self.username = username
@@ -34,10 +34,10 @@ class Environment():
         self.env = env
         self.encoding = encoding
         self._deploy_path = deploy_path
-        if type in ('remove', 'local'):
+        if type in ('remote', 'local'):
             self.type = type
         else:
-            raise er.ArgsError('env can only be local or remove.')
+            raise er.ArgsError('env can only be local or remote.')
 
     def set_deploy_path(self, path):
         self._deploy_path = path
@@ -63,6 +63,10 @@ class Environment():
             data['password'] = self.password
         if self.identity_file:
             data['identity_file'] = self.identity_file
+        if self.type in ('remote', 'local'):
+            data['type'] = self.type
+        else:
+            raise er.ArgsError('env can only be local or remote.', self.type)
         return data
 
     def __str__(self) -> str:
@@ -119,15 +123,19 @@ class Conf():
 
     def init_template(self, name):
         self._data = {'env': {
-            'dev': {
-                'host': 'example.org',
-                'port': '22',
-                'username': 'root',
-                'password': '123456',
-                'identity_file': '~/.ssh/id_ed25519',
-                'encoding': 'utf-8',
-                'deploy_path': '/srv/drops/' + name,
-                'type': 'remove',
+            # 'dev': {
+            #     'host': 'example.org',
+            #     'port': '22',
+            #     'username': 'root',
+            #     'password': '123456',
+            #     'identity_file': '~/.ssh/id_ed25519',
+            #     'encoding': 'utf-8',
+            #     'deploy_path': '/srv/drops/' + name,
+            #     'type': 'remote',
+            # }
+            'local':{
+                'deploy_path':'.',
+                'type': 'local',
             }
         },
             'project': {
