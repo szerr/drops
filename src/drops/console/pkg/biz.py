@@ -33,10 +33,12 @@ from . import config
 from . import globa
 from . import helper
 
+
 def new_project(name, path):
     os.chdir(path)
     os.mkdir(name)
     return init_project(name, os.path.join(path, name))
+
 
 def init_project(name, path):
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
@@ -52,14 +54,17 @@ def init_project(name, path):
     # 初始化配置
     if globa.args.env:
         env = config.gen_env_by_args(globa.args)
-        config.Conf().init_template(name).set_env(env).save(os.path.join(path, globa.args.config))
+        config.Conf().init_template(name).set_env(
+            env).save(os.path.join(path, globa.args.config))
     else:
         config.Conf().init_template(name).save(os.path.join(path, globa.args.config))
     return 0
 
+
 def rsync2remotely(env, src, target, exclude=[]):
     # rsync 本地同步到远程路径
-    exclude = ' --exclude '.join(['', './.gitignore', './.git', './drops.yaml', './src', './secret'] + exclude)
+    exclude = ' --exclude '.join(['', './.gitignore',
+                                 './.git', './'+globa.args.config, './src', './secret'] + exclude)
     if env.identity_file:
         b = 'rsync -avzP --del -e "ssh -p {port} -i {key_path}" {exclude} {src} {username}@{host}:{target}'
         echo_b = b.format(
@@ -151,10 +156,10 @@ def ssh_shell(env, b):
             env.password, env.port, env.username, env.host, b))
 
 
-def rsync_release(env, force):
+def rsync_release(env, force=False):
     print('------- sync release -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'release', helper.container_path())
+    return rsync2remotely(env, 'release', env.get_deploy_path())
 
 
 def rsync_docker(env, force=False):
@@ -164,46 +169,47 @@ def rsync_docker(env, force=False):
     return rsync2remotely(env, 'docker-compose.yaml', helper.docker_compose_path())
 
 
-def rsync_servers(env, force):
+def rsync_servers(env, force=False):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'servers', helper.container_path())
+    return rsync2remotely(env, 'servers', env.get_deploy_path())
 
 
-def rsync_ops(env, force):
+def rsync_ops(env, force=False):
     print('------- sync ops -------')
     detection_cmd('rsync')
     exclude = [i for i in os.listdir(helper.work_path()) if
                not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
-    return rsync2remotely(env, '.', helper.container_path(), exclude)
+    return rsync2remotely(env, '.', env.get_deploy_path(), exclude)
 
 
 def rsync_var(env, force):
     if not confirm_empty_dir(env, helper.var_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, helper.var_path())):
             raise er.UserCancel
-    return rsync2remotely(env, 'var', helper.container_path())
+    return rsync2remotely(env, 'var', env.get_deploy_path())
 
 
 def rsync_volumes(env, force):
     if not confirm_empty_dir(env, helper.volumes_path()):
         if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, helper.volumes_path())):
             raise er.UserCancel
-    return rsync2remotely(env, 'volumes', helper.container_path())
+    return rsync2remotely(env, 'volumes', env.get_deploy_path())
 
 
 def sync(env, force=False, obj='ops'):
     # rsync 不会创建上一层文件夹，同步前创建
     c = system.SSH(env)
     if force:  # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
-        _, status = c.exec(' mkdir -p ' + helper.container_path())
+        _, status = c.exec(' mkdir -p ' + env.get_deploy_path())
     else:
         _, status = c.exec(' mkdir -p ' + helper.deploy_path())
         # if not confirm_drops_project(c):
-        #     if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，继续同步可能会导致丢失数据。是否继续？" % (env.env, env.host, helper.container_path())):
+        #     if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，继续同步可能会导致丢失数据。是否继续？" % (env.env, env.host, env.get_deploy_path())):
         #         raise er.UserCancel
     if status != 0:
-        raise er.CmdExecutionError('mkdir -p ' + helper.deploy_path() + ', code=' + str(status))
+        raise er.CmdExecutionError(
+            'mkdir -p ' + helper.deploy_path() + ', code=' + str(status))
     arg = (env, force)
     if obj == 'ops':
         return rsync_ops(*arg)
@@ -246,17 +252,20 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
             [helper.servers_path() + '/', backup2dir.format(obj='servers')],
             [helper.var_path() + '/', backup2dir.format(obj='var')],
             [helper.volumes_path() + '/', backup2dir.format(obj='volumes')],
-            [helper.docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
+            [helper.docker_compose_path(), backup2dir.format(
+                obj='docker-compose.yaml')],
         ]
     elif obj == 'ops':
         back_li = [
             [helper.release_path() + '/', backup2dir.format(obj='release')],
             [helper.servers_path() + '/', backup2dir.format(obj='servers')],
-            [helper.docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
+            [helper.docker_compose_path(), backup2dir.format(
+                obj='docker-compose.yaml')],
         ]
     elif obj == 'docker':
         back_li = [
-            [helper.docker_compose_path(), backup2dir.format(obj='docker-compose.yaml')],
+            [helper.docker_compose_path(), backup2dir.format(
+                obj='docker-compose.yaml')],
         ]
     elif obj == 'release':
         back_li = [
@@ -307,7 +316,8 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
             if exist_li:
                 # link 目录是排序后最大的目录
                 link_dir = exist_li[0]
-                link_desc = os.path.join(helper.work_path(), target_path, link_dir)
+                link_desc = os.path.join(
+                    helper.work_path(), target_path, link_dir)
             else:
                 print("%s 路径下没有找到合适的备份文件夹，--link-dest 功能关闭。" % target_path)
         s = rsync_backup(env, source_path, backup2path, link_desc)
@@ -362,16 +372,16 @@ def confirm_drops_project(client):
     # 防止出现同步时误删除，同步前检查目录。目录存在返回0，否则返回1
     while True:
         _, s = client.exec(
-            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % helper.container_path(), False)
+            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % env.get_deploy_path(), False)
         if s != -1:
             break
     # 目录不存在时可以安全同步，创建项目目录
     if s == 1:
-        client.exec('''mkdir -p ''' + helper.container_path(), False)
+        client.exec('''mkdir -p ''' + env.get_deploy_path(), False)
         return True
 
     b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
-        helper.container_path() + '/docker-compose.yaml', helper.container_path() + '/servers')
+        env.get_deploy_path() + '/docker-compose.yaml', env.get_deploy_path() + '/servers')
 
     while True:
         _, s = client.exec(b, False)
@@ -429,7 +439,8 @@ class process():
     def __init__(self, command, intervals):
         self._intervals = intervals  # 重启间隔时间
         self._command_str = ' '.join(command)
-        self._command = [i for i in self._command_str.split(' ') if i]  # 形成参数数组
+        self._command = [
+            i for i in self._command_str.split(' ') if i]  # 形成参数数组
         self._process = None
         self._event_li = []
         self._run_status = True
@@ -442,7 +453,8 @@ class process():
 
     def start(self):
         print("run>", self._command_str)
-        self._process = subprocess.Popen(self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+        self._process = subprocess.Popen(
+            self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
 
     def stop(self):
         if self._process:
@@ -475,10 +487,12 @@ def monitor_path(path, command, intervals):
     if command:
         p = process(command, intervals)
         p.start()
-        observer.schedule(Filesystem.systemEventHander(p.add_event), path, recursive=True)
+        observer.schedule(Filesystem.systemEventHander(
+            p.add_event), path, recursive=True)
     else:
         # 如果没有命令参数，收到事件后退出。
-        observer.schedule(Filesystem.systemEventHander(lambda: sys.exit(0)), path, recursive=True)
+        observer.schedule(Filesystem.systemEventHander(
+            lambda: sys.exit(0)), path, recursive=True)
     observer.start()
 
     try:

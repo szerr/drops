@@ -28,7 +28,15 @@ def join_path(*p):
     return '/'.join(p_li)
 
 
-def check_env():
-    # 检查 env 是否有效
-    if not globa.env.host:
-        raise er.ArgsError("env.host 无效，检查 --host 参数或 env 配置。")
+def work_path():
+    # 当前 drops 项目绝对路径，drops.yaml 所在目录
+    return os.getcwd()
+
+
+def deploy_path(env):
+    return env.get_deploy_path()
+
+
+def volumes_path(env):
+    # volumes路径
+    return join_path(deploy_path(env), 'volumes')

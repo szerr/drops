@@ -42,10 +42,10 @@ class Environment():
     def set_deploy_path(self, path):
         self._deploy_path = path
 
-    def get_deploy_path(self):
+    def get_deploy_path(self, project_name=None):
         if not self._deploy_path:
-            if globa.conf.project_name():
-                return '/srv/drops/' + globa.conf.project_name()
+            if project_name:
+                return '/srv/drops/' + project_name
             else:
                 raise er.NoProjectNameOrDeploymentSet
         return self._deploy_path
@@ -133,6 +133,7 @@ class Conf():
         },
             'project': {
                 'name': name,
+                'default_env': 'local',
             },
         }
         return self
@@ -194,10 +195,44 @@ class Conf():
 
     def project_name(self):
         return self._data.get('project', {}).get('name', "")
-    # def has_default_env(self):
-    #     return self._data.get('project', {}).get('default_env', False) and True
-    # def get_default_env(self)->str:
-    #     default_env = self._data.get('project', {}).get('default_env', None)
-    #     if default_env:
-    #         return self.get_env(default_env)
-    #     raise er.NoDefaultEnvironmentIsSet
+
+    def has_default_env(self):
+        return self._data.get('project', {}).get('default_env', False) and True
+
+    def get_default_env(self)->Environment:
+        default_env = self._data.get('project', {}).get('default_env', None)
+        if default_env:
+            return self.get_env(default_env)
+        raise er.NoDefaultEnvironmentIsSet
+
+def get_env():
+    # 处理全局参数，读取配置文件，按优先级替换 env 参数
+    conf = Conf().open(globa.args.config)
+    if globa.args.env:
+        if globa.conf.has_env(globa.args.env):
+            env = globa.conf.get_env(globa.args.env)
+        else:
+            env = Environment(globa.args.env, 'local')
+    elif conf.has_default_env():
+        env = conf.get_default_env()
+    else:
+        raise er.NoDefaultEnvironmentIsSet
+
+    # 有传参时替换掉对应的 env 属性。参数优先级高于配置文件。
+    if globa.args.host:
+        env.host = globa.args.host
+    if globa.args.port:
+        env.port = globa.args.port
+    if globa.args.username:
+        env.username = globa.args.username
+    if globa.args.identity_file:
+        env.identity_file = globa.args.identity_file
+    if globa.args.password:
+        env.password = globa.args.password
+    if globa.args.encoding:
+        env.encoding = globa.args.encoding
+    if globa.args.deploy_path:
+        env.set_deploy_path(globa.args.deploy_path)
+    if globa.args.type:
+        env.type = globa.args.type
+    return env

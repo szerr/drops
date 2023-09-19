@@ -73,11 +73,11 @@ def add_backup_cmd(s):
 
 
 def backup_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
-    return biz.backup(globa.env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
+    return biz.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(
@@ -94,24 +94,23 @@ def add_deploy_cmd(s):
     p.set_defaults(func=deploy_cmd)
 
 def deploy_https_cert_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     b = 'exec -T acme.sh redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
-    biz.docker_compose_cmd('restart acme.sh', globa.env)
+    biz.docker_compose_cmd('restart acme.sh', env)
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
     print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 
 def deploy_cmd(p):
-    helper.check_env()
-    
-    s = biz.sync(globa.env, p.force)
+    env = config.get_env()
+    s = biz.sync(env, p.force)
     if s:
         return s
-    return biz.docker_compose_cmd("up -d", globa.env)
+    return biz.docker_compose_cmd("up -d", env)
 
 def add_echo_paths_cmd(s):
     p = s.add_parser(
@@ -140,8 +139,8 @@ def add_exec_cmd(s):
 def exec_cmd(p):
     failed_times = 0
     while True:
-        status = biz.exec(globa.env, biz.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), globa.env, p.restart)
+        status = biz.exec(env, biz.docker_cmd_template(
+        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
         if p.restart:
             if status:
                 failed_times += 1
@@ -163,13 +162,13 @@ def add_env_cmd(s):
 def env_cmd(a):
     c = config.Conf().open()
     if a.cmd == 'add' or a.cmd == 'change':
-        helper.check_env()
+        env = config.get_env()
         if a.cmd == 'add':
             if not globa.args.host:
                 raise er.ArgsError("The -H(--host) argument is required.")
-        c.set_env(globa.args.env, globa.env).save()
+        c.set_env(globa.args.env, env).save()
     elif a.cmd == 'remove':
-        helper.check_env()
+        env = config.get_env()
         c.remove_env(globa.args.env).save()
     elif a.cmd == 'ls':
         config.Conf().ls()
@@ -184,10 +183,10 @@ def add_init_env_debian_cmd(s):
 
 
 def init_env_debian_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
-    return biz.exec(bin, globa.env)
+    return biz.exec(bin, env)
 
 def add_kill_cmd(s):
     p = s.add_parser(
@@ -200,7 +199,7 @@ def kill_cmd(p):
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_logs_cmd(s):
     p = s.add_parser(
@@ -219,9 +218,9 @@ def logs_cmd(p):
         b += '-f '
     if p.loop:
         while True:
-            biz.docker_compose_cmd(b+p.container, globa.env)
+            biz.docker_compose_cmd(b+p.container, env)
             time.sleep(1)
-    return biz.docker_compose_cmd(b+p.container, globa.env)
+    return biz.docker_compose_cmd(b+p.container, env)
 
 
 def add_nginx_force_reload_cmd(s):
@@ -231,8 +230,8 @@ def add_nginx_force_reload_cmd(s):
 
 
 def nginx_force_reload_cmd(p):
-    return biz.exec(biz.docker_cmd_template(globa.env,
-        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), globa.env)
+    return biz.exec(biz.docker_cmd_template(env,
+        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
 
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
@@ -241,7 +240,7 @@ def add_nginx_reload_cmd(s):
 
 
 def nginx_reload_cmd(p):
-    return biz.docker_compose_cmd('exec -T nginx nginx -s reload', globa.env)
+    return biz.docker_compose_cmd('exec -T nginx nginx -s reload', env)
 
 def add_project_cmd(s):
     p = s.add_parser(
@@ -273,7 +272,7 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
-    return biz.docker_compose_cmd("ps", globa.env)
+    return biz.docker_compose_cmd("ps", env)
 
 
 def add_pull_cmd(s):
@@ -287,7 +286,7 @@ def pull_cmd(p):
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 
 def add_redeploy_cmd(s):
@@ -298,10 +297,10 @@ def add_redeploy_cmd(s):
 
 
 def redeploy_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     
-    biz.sync(globa.env, p.force)
-    return biz.docker_compose_cmd("up -d --build --remove-orphans", globa.env)
+    biz.sync(env, p.force)
+    return biz.docker_compose_cmd("up -d --build --remove-orphans", env)
 
 def add_restart_cmd(s):
     p = s.add_parser(
@@ -314,7 +313,7 @@ def restart_cmd(p):
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_rm_cmd(s):
     p = s.add_parser(
@@ -332,7 +331,7 @@ def rm_cmd(p):
         b += ' ' + ' '.join(p.container)
     elif not p.force and not biz.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_start_cmd(s):
     p = s.add_parser(
@@ -345,7 +344,7 @@ def start_cmd(p):
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_stop_cmd(s):
     p = s.add_parser(
@@ -358,7 +357,7 @@ def stop_cmd(p):
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_sync_cmd(s):
     p = s.add_parser(
@@ -375,9 +374,9 @@ var, volumes 建议只用来同步初始数据。
 
 
 def sync_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     
-    return biz.sync(globa.env, p.force, p.obj)
+    return biz.sync(env, p.force, p.obj)
 
 
 def add_up_cmd(s):
@@ -391,7 +390,7 @@ def up_cmd(p):
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
-    return biz.docker_compose_cmd(b, globa.env)
+    return biz.docker_compose_cmd(b, env)
 
 def add_monitor_path_cmd(s):
     p = s.add_parser(
@@ -494,18 +493,18 @@ def add_undeploy_cmd(s):
 
 
 def undeploy_cmd(p):
-    helper.check_env()
+    env = config.get_env()
     if not p.force and not biz.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+biz.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
     
     status = 0
     print('---------- kill ----------')
-    status = biz.docker_compose_cmd('kill', globa.env)
+    status = biz.docker_compose_cmd('kill', env)
     if status:
         return status
     print('--------- rm -f ---------')
-    status = biz.docker_compose_cmd('rm -f', globa.env)
+    status = biz.docker_compose_cmd('rm -f', env)
     if status:
         return
     print('-------- rm -rf %s --------' % biz.container_path())
-    return biz.exec('rm -rf %s' % biz.container_path(), globa.env)
+    return biz.exec('rm -rf %s' % biz.container_path(), env)
