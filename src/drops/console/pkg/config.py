@@ -24,8 +24,8 @@ from . import er
 
 
 class Environment():
-    def __init__(self, host, port, username, env, encoding, deploy_path='', identity_file='', password='',
-                 type='remote'):
+    def __init__(self, env, type, host='', port='', username='', encoding='', 
+                 deploy_path='', identity_file='', password=''):
         self.host = host
         self.port = port
         self.username = username
@@ -105,8 +105,9 @@ class Conf():
     # 方便获取配置对象
     def __getattr__(self, name):
         # 自动获取参数和配置文件内容
+        print(self._data['env'])
         if name == 'env':
-            return {k: Environment(i) for k, i in self._data['env'].items()}
+            return {k: Environment(k, **i) for k, i in self._data['env'].items()}
         return self._data[name].copy()
 
     def set_project_name(self, n):
@@ -116,23 +117,15 @@ class Conf():
         self._data['project'] = p
         return self
 
-    def save(self, path):
+    def save(self, path=None):
+        if not path:
+            path = globa.args.config
         with open(path, 'w') as fd:
             fd.write(yaml.dump(self._data))
         return self
 
     def init_template(self, name):
         self._data = {'env': {
-            # 'dev': {
-            #     'host': 'example.org',
-            #     'port': '22',
-            #     'username': 'root',
-            #     'password': '123456',
-            #     'identity_file': '~/.ssh/id_ed25519',
-            #     'encoding': 'utf-8',
-            #     'deploy_path': '/srv/drops/' + name,
-            #     'type': 'remote',
-            # }
             'local':{
                 'deploy_path':'.',
                 'type': 'local',
@@ -142,27 +135,6 @@ class Conf():
                 'name': name,
             },
         }
-        return self
-
-    def new(self, path, name):
-        if os.path.isfile(path):
-            raise er.ConfigFileAlreadyExists
-        self._data = {'env': {
-            'dev': {
-                'host': 'example.org',
-                'port': '22',
-                'username': 'root',
-                'password': '123456',
-                'identity_file': '~/.ssh/id_ed25519',
-                'encoding': 'utf-8',
-                'deploy_path': '/srv/drops/' + name,
-            }
-        },
-            'project': {
-                'name': name,
-            },
-        }
-        self.save(path)
         return self
 
     def set_env(self, env: Environment):
