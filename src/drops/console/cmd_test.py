@@ -1,67 +1,66 @@
 from typing import Any
 import unittest
 
-from pkg import cmd
+import pkg
 import tempfile
-import os
+import os, random
 
-class ObjectDict():
-    def __init__(self, **args):
-        self._data = args
-    def __getattr__(self, name) -> Any:
-        return self._data[name]
-    def __setattr__(self, __name: str, __value: Any) -> None:
-        self._data[__name] = __value
+work_path = '.'
+
+def randstr(i):
+    s = 'abcdefghijklmnopqrstuvwxyz'
+    return ''.join(random.sample(s, i))
 
 class virtualObj(dict):
     def __init__(self, *args, **kwargs):
-        super(ObjectDict, self).__init__(*args, **kwargs)
-
+        super(virtualObj, self).__init__(*args, **kwargs)
+ 
     def __getattr__(self, name):
-        value =  self[name]
-        if isinstance(value, dict):
-            value = ObjectDict(value)
-        return value
+        return self[name]
 
-def args_enumerate():
-    # 枚举全局测试参数
-    argli = {
-        'env':['dev', 'local'],
-        'host':['example.drops.icu', ''],
-        'port':[22, 22],
-        'username': ['root', ''],
-        'identity_file': ['~/.ssh/id_ed25519', ''],
-        'password': ['1', ''],
-        'encoding': ['utf-8', ''],
-        'deploy_path': ['/srv/drops', '.'],
-        'config': ['drops.yaml', ''],
-    }
-    data = {virtualObj(), virtualObj()}
-    for k, i in argli.items():
-        data[0][k]=i[0]
-        data[1][k]=i[1]
+def gen_messy_args():
+    # 随意的填一填命令行参数
+    args = virtualObj(
+        env='production'+randstr(3),
+        host='example.drops.icu'+randstr(3),
+        port=random.randint(0, 30000),
+        username='root'+randstr(3),
+        identity_file='~/.ssh/id_ed25519'+randstr(3),
+        password=randstr(3),
+        encoding='utf-8'+randstr(3),
+        deploy_path='/srv/drops/te'+randstr(3),
+        config='drops.yaml'+randstr(3),
+        env_type='remote',
+    )
+    return args
 
-    return data
-
-def set_args_iter():
-    # 迭代参数，设置全局变量
-    for a in args_enumerate():
-        cmd.globa.args = a
-        yield(a)
+def check_messy_conf(assertTrue, args, conf):
+    assertTrue('  '+args.env+':' in conf)
+    assertTrue('    host: '+args.host in conf)
+    assertTrue('    port: '+str(args.port) in conf)
+    assertTrue('    username: '+args.username in conf)
+    assertTrue('    identity_file: '+args.identity_file in conf)
+    assertTrue('    password: '+args.password in conf)
+    assertTrue('    encoding: '+args.encoding in conf)
+    assertTrue('    deploy_path: '+args.deploy_path in conf)
+    assertTrue('    type: '+args.env_type in conf)
 
 class TestRemoteEnv(unittest.TestCase):
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName)
-        self._temp_dir = tempfile.TemporaryDirectory()
     def setUp(self):
-        os.chdir(self._temp_dir.name)
+        os.chdir(work_path.name)
+        self.args = gen_messy_args()
+        pkg.globa.args = self.args
     def tearDown(self):
-        self._temp_dir.cleanup()
+        work_path.cleanup()
     def test_new(self):
-        for _ in set_args_iter():
-            self.setUp()
-            cmd.new_cmd(virtualObj(dir_name='te', project_name='a'))
-            self.tearDown()
+        pkg.cmd.new_cmd(virtualObj(project_name='te'))
+        project_path = os.path.join(work_path.name, 'te')
+        with open(os.path.join(project_path, self.args.config)) as fd:
+            conf = fd.read()
+        check_messy_conf(self.assertTrue, self.args, conf)
 
 if __name__ == '__main__':
+    work_path = tempfile.TemporaryDirectory()
     unittest.main()
