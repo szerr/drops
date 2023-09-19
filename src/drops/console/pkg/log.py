@@ -6,3 +6,9 @@ def debug(*s):
 
 def warning(*s):
     print('Warning:', *s)
+
+def info(*s):
+    print('Info:', s)
+
+def run(*s):
+    info('run >', s)

@@ -27,7 +27,7 @@ import threading
 
 import drops
 
-from . import er
+from . import er, log
 from . import system
 from . import config
 from . import globa
@@ -77,7 +77,7 @@ def rsync2remotely(env, src, target, exclude=[]):
         b = b.format(
             src=src, target=target, password=env.password, port=env.port, username=env.username, host=env.host,
             exclude=exclude)
-    print(echo_b)
+    log.run(echo_b)
     return system.system(b)
 
 

@@ -138,7 +138,6 @@ def add_exec_cmd(s):
 
 
 def exec_cmd(p):
-    
     failed_times = 0
     while True:
         status = biz.exec(globa.env, biz.docker_cmd_template(
@@ -198,7 +197,6 @@ def add_kill_cmd(s):
 
 
 def kill_cmd(p):
-    
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
@@ -216,7 +214,6 @@ def add_logs_cmd(s):
     p.set_defaults(func=logs_cmd)
 
 def logs_cmd(p):
-    
     b = 'logs '
     if p.follow:
         b += '-f '
@@ -234,7 +231,6 @@ def add_nginx_force_reload_cmd(s):
 
 
 def nginx_force_reload_cmd(p):
-    
     return biz.exec(biz.docker_cmd_template(globa.env,
         "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), globa.env)
 
@@ -245,7 +241,6 @@ def add_nginx_reload_cmd(s):
 
 
 def nginx_reload_cmd(p):
-    
     return biz.docker_compose_cmd('exec -T nginx nginx -s reload', globa.env)
 
 def add_project_cmd(s):
@@ -289,7 +284,6 @@ def add_pull_cmd(s):
 
 
 def pull_cmd(p):
-    
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
@@ -317,7 +311,6 @@ def add_restart_cmd(s):
 
 
 def restart_cmd(p):
-    
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
@@ -332,7 +325,6 @@ def add_rm_cmd(s):
 
 
 def rm_cmd(p):
-    
     b = 'rm -f'
     if p.container:
         if not p.force and not biz.user_confirm('确认删除 ', ' '.join(p.container), '？'):
@@ -350,7 +342,6 @@ def add_start_cmd(s):
 
 
 def start_cmd(p):
-    
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
@@ -364,7 +355,6 @@ def add_stop_cmd(s):
 
 
 def stop_cmd(p):
-    
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
@@ -398,7 +388,6 @@ def add_up_cmd(s):
 
 
 def up_cmd(p):
-    
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
