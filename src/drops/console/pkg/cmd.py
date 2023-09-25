@@ -29,6 +29,7 @@ from . import er
 from . import globa
 from . import log
 
+
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
@@ -48,8 +49,10 @@ def add_init_cmd(s):
     p.set_defaults(func=init_cmd)
     p.add_argument("project_name", help="项目名。")
 
+
 def init_cmd(p):
     return biz.init_project(p.project_name, '.')
+
 
 def add_backup_cmd(s):
     p = s.add_parser(
@@ -74,10 +77,11 @@ def add_backup_cmd(s):
 
 def backup_cmd(p):
     env = config.get_env()
-    
+
     if not os.path.isdir(p.target):
         os.mkdir(p.target)
     return biz.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
+
 
 def add_deploy_https_cert_cmd(s):
     p = s.add_parser(
@@ -92,6 +96,7 @@ def add_deploy_cmd(s):
         'deploy', help='部署并启动服务。')
     biz.add_arg_force(p)
     p.set_defaults(func=deploy_cmd)
+
 
 def deploy_https_cert_cmd(p):
     env = config.get_env()
@@ -112,6 +117,7 @@ def deploy_cmd(p):
         return s
     return biz.docker_compose_cmd("up -d", env)
 
+
 def add_echo_paths_cmd(s):
     p = s.add_parser(
         'echo-paths', help='显示 drops 用到的各部署路径')
@@ -123,6 +129,7 @@ def deploy_echo_paths_cmd(p):
     print('发布路径，应用程序文件夹:', biz.release_path())
     print('volumes 路径，应用程序数据文件夹:', biz.volumes_path())
     return 0
+
 
 def add_exec_cmd(s):
     p = s.add_parser(
@@ -140,17 +147,18 @@ def exec_cmd(p):
     failed_times = 0
     while True:
         status = biz.exec(env, biz.docker_cmd_template(
-        "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
+            "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
         if p.restart:
             if status:
                 failed_times += 1
                 sleep = failed_times % 60
-                print('exit status: %d, sleep: %ds....'%(status, sleep))
+                print('exit status: %d, sleep: %ds....' % (status, sleep))
                 time.sleep(sleep)
             else:
-                failed_times=0
+                failed_times = 0
         else:
             break
+
 
 def add_env_cmd(s):
     p = s.add_parser(
@@ -158,6 +166,7 @@ def add_env_cmd(s):
     p.add_argument('cmd', type=str, choices=[
                    'ls', 'add', 'remove', 'change'], nargs='?', help="default ls")
     p.set_defaults(func=env_cmd)
+
 
 def env_cmd(a):
     c = config.Conf().open()
@@ -176,6 +185,7 @@ def env_cmd(a):
         config.Conf().ls()
     return 0
 
+
 def add_init_env_debian_cmd(s):
     p = s.add_parser(
         'init-debian-env', help='初始化 debian 系远程环境。')
@@ -184,9 +194,10 @@ def add_init_env_debian_cmd(s):
 
 def init_env_debian_cmd(p):
     env = config.get_env()
-    
+
     bin = 'apt-get update && apt-get install -y rsync docker-compose'
     return biz.exec(bin, env)
+
 
 def add_kill_cmd(s):
     p = s.add_parser(
@@ -201,6 +212,7 @@ def kill_cmd(p):
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
 
+
 def add_logs_cmd(s):
     p = s.add_parser(
         'logs', help='输出容器日志。')
@@ -211,6 +223,7 @@ def add_logs_cmd(s):
     p.add_argument("-l", '--loop',
                    help="循坏输出，容器重启后重新运行。", default=False, action='store_true')
     p.set_defaults(func=logs_cmd)
+
 
 def logs_cmd(p):
     b = 'logs '
@@ -231,7 +244,8 @@ def add_nginx_force_reload_cmd(s):
 
 def nginx_force_reload_cmd(p):
     return biz.exec(biz.docker_cmd_template(env,
-        "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
+                                            "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
+
 
 def add_nginx_reload_cmd(s):
     p = s.add_parser(
@@ -241,6 +255,7 @@ def add_nginx_reload_cmd(s):
 
 def nginx_reload_cmd(p):
     return biz.docker_compose_cmd('exec -T nginx nginx -s reload', env)
+
 
 def add_project_cmd(s):
     p = s.add_parser(
@@ -264,6 +279,7 @@ def project_cmd(p):
         for k, i in c._data['project'].items():
             print(k, ': ', i, sep='')
     return 0
+
 
 def add_ps_cmd(s):
     p = s.add_parser(
@@ -298,9 +314,10 @@ def add_redeploy_cmd(s):
 
 def redeploy_cmd(p):
     env = config.get_env()
-    
+
     biz.sync(env, p.force)
     return biz.docker_compose_cmd("up -d --build --remove-orphans", env)
+
 
 def add_restart_cmd(s):
     p = s.add_parser(
@@ -314,6 +331,7 @@ def restart_cmd(p):
     if p.container:
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
+
 
 def add_rm_cmd(s):
     p = s.add_parser(
@@ -333,6 +351,7 @@ def rm_cmd(p):
         raise er.UserCancel
     return biz.docker_compose_cmd(b, env)
 
+
 def add_start_cmd(s):
     p = s.add_parser(
         'start', help='启动容器。')
@@ -346,6 +365,7 @@ def start_cmd(p):
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
 
+
 def add_stop_cmd(s):
     p = s.add_parser(
         'stop', help='停止容器。')
@@ -358,6 +378,7 @@ def stop_cmd(p):
     if p.container:
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
+
 
 def add_sync_cmd(s):
     p = s.add_parser(
@@ -375,7 +396,7 @@ var, volumes 建议只用来同步初始数据。
 
 def sync_cmd(p):
     env = config.get_env()
-    
+
     return biz.sync(env, p.force, p.obj)
 
 
@@ -392,6 +413,7 @@ def up_cmd(p):
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
 
+
 def add_monitor_path_cmd(s):
     p = s.add_parser(
         'monitor-path', help='监视指定路径，接收文件更改事件后返回，或循环执行命令。')
@@ -404,22 +426,25 @@ def add_monitor_path_cmd(s):
     biz.add_arg_container(p)
     p.set_defaults(func=monitor_path_cmd)
 
+
 def monitor_path_cmd(p):
     # 监视文件夹，接受文件变动后返回0，或者执行命令。
     return biz.monitor_path(p.path, p.command, p.intervals)
+
 
 def add_build_cmd(s):
     p = s.add_parser(
         'build', help='执行所有项目的 drops/build 脚本，优先级：py > sh > bat')
     p.add_argument('project',
-        help="指定一个或多个项目.", default=[], nargs='*', type=str)
+                   help="指定一个或多个项目.", default=[], nargs='*', type=str)
     # 因为 bash
     p.add_argument("-d", '--dest',
-        help="输出目录的绝对路径，drops 会给每个项目创建一个目录，作为 --dest 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
+                   help="输出目录的绝对路径，drops 会给每个项目创建一个目录，作为 --dest 参数传给脚本。默认 ./release/[project]。", default='../../../release', nargs='?', type=str)
     p.add_argument("-c", '--clear',
-        help="编译前清理目标文件夹。", default=False, action='store_true')
+                   help="编译前清理目标文件夹。", default=False, action='store_true')
     biz.add_arg_container(p)
     p.set_defaults(func=build_cmd)
+
 
 def build_cmd(arg):
     pli = arg.project
@@ -431,7 +456,7 @@ def build_cmd(arg):
         script_dir = os.path.join('src', p_path, 'drops')
         output_dir = os.path.join(arg.dest, p_path)
         if not os.path.isdir(script_dir):
-            log.warning("There is no script for project", p_path)
+            log.warn("There is no script for project", p_path)
             continue
 
         # 支持的脚本类型，按优先级排列
@@ -458,10 +483,12 @@ def build_cmd(arg):
                 os.chdir(cwd)
                 break
         else:
-            log.warning("No supported build script found.")
+            log.warn("No supported build script found.")
     return 0
 
 # debug 模式下可用的命令：
+
+
 def add_clean_up_cmd(s):
     p = s.add_parser(
         'clean', help='删除当前目录下 drops 所有相关文件。')
@@ -485,6 +512,7 @@ def new_clean_up(p):
             os.remove(t)
     return 0
 
+
 def add_undeploy_cmd(s):
     p = s.add_parser(
         'undeploy', help='清理掉服务器上的容器和项目')
@@ -496,7 +524,7 @@ def undeploy_cmd(p):
     env = config.get_env()
     if not p.force and not biz.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+biz.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
-    
+
     status = 0
     print('---------- kill ----------')
     status = biz.docker_compose_cmd('kill', env)

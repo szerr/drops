@@ -40,3 +40,7 @@ def deploy_path(env):
 def volumes_path(env):
     # volumes路径
     return join_path(deploy_path(env), 'volumes')
+
+
+def docker_compose_path(env):
+    return os.path.join(work_path(), 'docker-compose.yaml')

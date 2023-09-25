@@ -135,7 +135,7 @@ def add_arg_force(p):
 
 
 def detection_cmd(*bl):
-    # 确认命令是否存在
+    # 本地命令是否存在
     for b in bl:
         for p in os.environ['PATH'].split(':'):
             if os.path.isdir(p) and b in os.listdir(p):
@@ -166,7 +166,7 @@ def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'docker-compose.yaml', helper.docker_compose_path())
+    return rsync2remotely(env, 'docker-compose.yaml', helper.docker_compose_path(env))
 
 
 def rsync_servers(env, force=False):
