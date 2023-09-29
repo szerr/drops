@@ -24,7 +24,7 @@ from . import er
 
 
 class Environment():
-    def __init__(self, env, type, host='', port='', username='', encoding='', 
+    def __init__(self, env, type, host='', port='', username='', encoding='',
                  deploy_path='', identity_file='', password=''):
         self.host = host
         self.port = port
@@ -81,6 +81,7 @@ def gen_env_by_args(args):
                        deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password,
                        type=args.env_type)
 
+
 class Conf():
     # 封装配置文件
     def __init__(self):
@@ -126,15 +127,15 @@ class Conf():
 
     def init_template(self, name):
         self._data = {'env': {
-            'local':{
-                'deploy_path':'.',
+            'local': {
+                'deploy_path': '.',
                 'type': 'local',
             }
         },
             'project': {
                 'name': name,
                 'default_env': 'local',
-            },
+        },
         }
         return self
 
@@ -199,18 +200,19 @@ class Conf():
     def has_default_env(self):
         return self._data.get('project', {}).get('default_env', False) and True
 
-    def get_default_env(self)->Environment:
+    def get_default_env(self) -> Environment:
         default_env = self._data.get('project', {}).get('default_env', None)
         if default_env:
             return self.get_env(default_env)
         raise er.NoDefaultEnvironmentIsSet
 
+
 def get_env():
     # 处理全局参数，读取配置文件，按优先级替换 env 参数
     conf = Conf().open(globa.args.config)
     if globa.args.env:
-        if globa.conf.has_env(globa.args.env):
-            env = globa.conf.get_env(globa.args.env)
+        if conf.has_env(globa.args.env):
+            env = conf.get_env(globa.args.env)
         else:
             env = Environment(globa.args.env, 'local')
     elif conf.has_default_env():
@@ -233,6 +235,6 @@ def get_env():
         env.encoding = globa.args.encoding
     if globa.args.deploy_path:
         env.set_deploy_path(globa.args.deploy_path)
-    if globa.args.type:
+    if globa.args.env_type:
         env.type = globa.args.type
     return env

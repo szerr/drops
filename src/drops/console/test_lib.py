@@ -1,15 +1,18 @@
 import random
 
+
 def randstr(i):
     s = 'abcdefghijklmnopqrstuvwxyz'
     return ''.join(random.sample(s, i))
 
+
 class virtualObj(dict):
     def __init__(self, *args, **kwargs):
         super(virtualObj, self).__init__(*args, **kwargs)
- 
+
     def __getattr__(self, name):
         return self[name]
+
 
 def gen_messy_args():
     # 随意的填一填命令行参数
@@ -50,6 +53,7 @@ def check_messy_env(assertEqual, args, env):
     assertEqual(args.encoding, env.encoding)
     assertEqual(args.deploy_path, env.get_deploy_path())
     assertEqual(args.env_type, env.type)
+
 
 def check_env(assertEqual, env1, env2):
     assertEqual(env1.env, env2.env)

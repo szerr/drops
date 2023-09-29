@@ -48,11 +48,12 @@ def main():
                 print('Fatal:', type(e).__name__, ':', e)
                 return 126
         else:
-            pkg.globa.debug_model = True
+            pkg.biz.log.set_level(pkg.biz.log.DEBUG)
             return args.func(args)
     else:
         parser.print_help()
     return 0
+
 
 if __name__ == "__main__":
     import pkg  # 为了单个文件调试

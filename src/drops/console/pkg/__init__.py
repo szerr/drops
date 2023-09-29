@@ -50,6 +50,8 @@ def init_argument(p, s):
     p.add_argument('-c', '--config',
                    help="Specify an alternate config file. default: drops.yaml.", default='drops.yaml', nargs='?',
                    type=str)
+    p.add_argument(
+        '--log', help="log level: off, fatal, error, warn, info, debug, trace, all", default='info', nargs='?', type=str)
 
     # 初始化各个命令和参数
     for i in dir(cmd):
@@ -70,7 +72,7 @@ def init_config(arg):
     # 尝试载入配置
     if os.path.isfile(arg.config):
         globa.conf.open(arg.config)
-    else: # 没有配置文件的话，预设一些配置项。
+    else:  # 没有配置文件的话，预设一些配置项。
         globa.conf.set_project_name(os.path.split(os.getcwd())[-1])
     if arg.env and globa.conf.has_env(arg.env):
         env = globa.conf.get_env(arg.env)

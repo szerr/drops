@@ -175,7 +175,7 @@ def env_cmd(a):
         if a.cmd == 'add':
             if not globa.args.host:
                 raise er.ArgsError("The -H(--host) argument is required.")
-        c.set_env(globa.args.env, env).save()
+        c.set_env(env).save()
     elif a.cmd == 'remove':
         env = config.get_env()
         c.remove_env(globa.args.env).save()

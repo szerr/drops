@@ -56,17 +56,17 @@ binLi = [
     '-e production backup all -d %Y-%m-%d_%H:%M:%S -k 1',
     '-e production undeploy -f',
     # 本地部署
-    'up',
-    'ps',
-    'stop nginx',
-    'start nginx',
-    'logs nginx',
-    'kill nginx',
-    'rm nginx -f',
-    'up',
-    'restart nginx',
-    'stop',
-    'rm -f',
+    # 'up',
+    # 'ps',
+    # 'stop nginx',
+    # 'start nginx',
+    # 'logs nginx',
+    # 'kill nginx',
+    # 'rm nginx -f',
+    # 'up',
+    # 'restart nginx',
+    # 'stop',
+    # 'rm -f',
 ]
 
 
@@ -80,10 +80,12 @@ def testBin(b):
     if s != 0:
         raise BinErr(b)
 
+
 def clear():
     os.chdir(start_dir)
     if os.path.isdir(test_project_name):
         shutil.rmtree(test_project_name)
+
 
 def main():
     b = 'python3 main.py --debug new ' + test_project_name

@@ -9,7 +9,24 @@ DEBUG = 5
 TRACE = 6
 ALL = 7
 
-LEVEL = INFO
+_LEVEL_STR = {"off": OFF,
+              "fatal": FATAL,
+              "error": ERROR,
+              "warn": WARN,
+              "info": INFO,
+              "debug": DEBUG,
+              "trace": TRACE,
+              "all": ALL}
+
+_LEVEL = INFO
+
+
+def set_level_str(s):
+    set_level(_LEVEL_STR['s'])
+
+
+def set_level(level):
+    _LEVEL = level
 
 
 def debug(*s):
@@ -18,35 +35,35 @@ def debug(*s):
 
 
 def fatal(*s):
-    if LEVEL >= FATAL:
+    if _LEVEL >= FATAL:
         print('fatal:', *s)
 
 
 def error(*s):
-    if LEVEL >= ERROR:
+    if _LEVEL >= ERROR:
         print('error:', *s)
 
 
 def warn(*s):
-    if LEVEL >= WARN:
+    if _LEVEL >= WARN:
         print('warn:', *s)
 
 
 def info(*s):
-    if LEVEL >= INFO:
+    if _LEVEL >= INFO:
         print('info:', *s)
 
 
 def debug(*s):
-    if LEVEL >= DEBUG:
+    if _LEVEL >= DEBUG:
         print('debug:', *s)
 
 
 def trace(*s):
-    if LEVEL >= TRACE:
+    if _LEVEL >= TRACE:
         print('trace:', *s)
 
 
 def run(*s):
-    if LEVEL >= INFO:
+    if _LEVEL >= INFO:
         info('run >', *s)
