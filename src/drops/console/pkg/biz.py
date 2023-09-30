@@ -159,20 +159,20 @@ def ssh_shell(env, b):
 def rsync_release(env, force=False):
     print('------- sync release -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'release', env.get_deploy_path())
+    return rsync2remotely(env, 'release', env.deploy_path)
 
 
 def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'docker-compose.yaml', helper.docker_compose_path(env))
+    return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path())
 
 
 def rsync_servers(env, force=False):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'servers', env.get_deploy_path())
+    return rsync2remotely(env, 'servers', env.deploy_path)
 
 
 def rsync_ops(env, force=False):
@@ -180,36 +180,33 @@ def rsync_ops(env, force=False):
     detection_cmd('rsync')
     exclude = [i for i in os.listdir(helper.work_path()) if
                not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
-    return rsync2remotely(env, '.', env.get_deploy_path(), exclude)
+    return rsync2remotely(env, '.', env.deploy_path, exclude)
 
 
 def rsync_var(env, force):
-    if not confirm_empty_dir(env, helper.var_path()):
-        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, helper.var_path())):
+    if not confirm_empty_dir(env, env.var_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, env.var_path())):
             raise er.UserCancel
-    return rsync2remotely(env, 'var', env.get_deploy_path())
+    return rsync2remotely(env, 'var', env.deploy_path)
 
 
 def rsync_volumes(env, force):
-    if not confirm_empty_dir(env, helper.volumes_path()):
-        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, helper.volumes_path())):
+    if not confirm_empty_dir(env, env.volumes_path()):
+        if not force and not user_confirm("主机 %s 远程目录 %s 不是空目录，是否继续同步？" % (env.host, env.volumes_path())):
             raise er.UserCancel
-    return rsync2remotely(env, 'volumes', env.get_deploy_path())
+    return rsync2remotely(env, 'volumes', env.deploy_path)
+
+
+def mkdir_deploy(env):
+    # 创建远程文件夹
+    c = system.SSH(env)
+    _, status = c.exec(' mkdir -p ' + env.deploy_path)
+    if status != 0:
+        raise er.CmdExecutionError(
+            'mkdir -p ' + env.deploy_path + ', code=' + str(status))
 
 
 def sync(env, force=False, obj='ops'):
-    # rsync 不会创建上一层文件夹，同步前创建
-    c = system.SSH(env)
-    if force:  # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
-        _, status = c.exec(' mkdir -p ' + env.get_deploy_path())
-    else:
-        _, status = c.exec(' mkdir -p ' + helper.deploy_path())
-        # if not confirm_drops_project(c):
-        #     if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，继续同步可能会导致丢失数据。是否继续？" % (env.env, env.host, env.get_deploy_path())):
-        #         raise er.UserCancel
-    if status != 0:
-        raise er.CmdExecutionError(
-            'mkdir -p ' + helper.deploy_path() + ', code=' + str(status))
     arg = (env, force)
     if obj == 'ops':
         return rsync_ops(*arg)
@@ -248,40 +245,40 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
     back_li = []
     if obj == 'all':
         back_li = [
-            [helper.release_path() + '/', backup2dir.format(obj='release')],
-            [helper.servers_path() + '/', backup2dir.format(obj='servers')],
-            [helper.var_path() + '/', backup2dir.format(obj='var')],
-            [helper.volumes_path() + '/', backup2dir.format(obj='volumes')],
-            [helper.docker_compose_path(), backup2dir.format(
+            [env.release_path() + '/', backup2dir.format(obj='release')],
+            [env.servers_path() + '/', backup2dir.format(obj='servers')],
+            [env.var_path() + '/', backup2dir.format(obj='var')],
+            [env.volumes_path() + '/', backup2dir.format(obj='volumes')],
+            [env.docker_compose_path(), backup2dir.format(
                 obj='docker-compose.yaml')],
         ]
     elif obj == 'ops':
         back_li = [
-            [helper.release_path() + '/', backup2dir.format(obj='release')],
-            [helper.servers_path() + '/', backup2dir.format(obj='servers')],
-            [helper.docker_compose_path(), backup2dir.format(
+            [env.release_path() + '/', backup2dir.format(obj='release')],
+            [env.servers_path() + '/', backup2dir.format(obj='servers')],
+            [env.docker_compose_path(), backup2dir.format(
                 obj='docker-compose.yaml')],
         ]
     elif obj == 'docker':
         back_li = [
-            [helper.docker_compose_path(), backup2dir.format(
+            [env.docker_compose_path(), backup2dir.format(
                 obj='docker-compose.yaml')],
         ]
     elif obj == 'release':
         back_li = [
-            [helper.release_path() + '/', backup2dir.format(obj='release')],
+            [env.release_path() + '/', backup2dir.format(obj='release')],
         ]
     elif obj == 'servers':
         back_li = [
-            [helper.servers_path() + '/', backup2dir.format(obj='servers')],
+            [env.servers_path() + '/', backup2dir.format(obj='servers')],
         ]
     elif obj == 'var':
         back_li = [
-            [helper.var_path() + '/', backup2dir.format(obj='var')],
+            [env.var_path() + '/', backup2dir.format(obj='var')],
         ]
     elif obj == 'volumes':
         back_li = [
-            [helper.volumes_path() + '/', backup2dir.format(obj='volumes')],
+            [env.volumes_path() + '/', backup2dir.format(obj='volumes')],
         ]
     else:
         raise er.UnsupportedBackupObject(obj)
@@ -334,14 +331,14 @@ def docker_compose_cmd(cmd, env):
     for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
-    return exec(helper.docker_cmd_template(env, cmd), env)
+    return exec(env.docker_cmd_template(cmd), env)
 
 
 def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
     stdout = ""
-    if not env.host:
+    if env.type == config.ENV_LOCAL:
         print('run host > localhost')
         print('command >', cmd)
         status = system.system(cmd)
@@ -372,16 +369,16 @@ def confirm_drops_project(client):
     # 防止出现同步时误删除，同步前检查目录。目录存在返回0，否则返回1
     while True:
         _, s = client.exec(
-            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % env.get_deploy_path(), False)
+            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % env.deploy_path, False)
         if s != -1:
             break
     # 目录不存在时可以安全同步，创建项目目录
     if s == 1:
-        client.exec('''mkdir -p ''' + env.get_deploy_path(), False)
+        client.exec('''mkdir -p ''' + env.deploy_path, False)
         return True
 
     b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
-        env.get_deploy_path() + '/docker-compose.yaml', env.get_deploy_path() + '/servers')
+        env.deploy_path + '/docker-compose.yaml', env.deploy_path + '/servers')
 
     while True:
         _, s = client.exec(b, False)

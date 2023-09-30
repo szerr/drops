@@ -91,13 +91,6 @@ def add_deploy_https_cert_cmd(s):
     p.set_defaults(func=deploy_https_cert_cmd)
 
 
-def add_deploy_cmd(s):
-    p = s.add_parser(
-        'deploy', help='部署并启动服务。')
-    biz.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
-
-
 def deploy_https_cert_cmd(p):
     env = config.get_env()
     b = 'exec -T acme.sh redeploy-ssl'
@@ -110,8 +103,16 @@ def deploy_https_cert_cmd(p):
     return biz.docker_compose_cmd(b, env)
 
 
+def add_deploy_cmd(s):
+    p = s.add_parser(
+        'deploy', help='部署并启动服务。')
+    biz.add_arg_force(p)
+    p.set_defaults(func=deploy_cmd)
+
+
 def deploy_cmd(p):
     env = config.get_env()
+    biz.mkdir_deploy(env)
     s = biz.sync(env, p.force)
     if s:
         return s
@@ -175,7 +176,7 @@ def env_cmd(a):
         if a.cmd == 'add':
             if not globa.args.host:
                 raise er.ArgsError("The -H(--host) argument is required.")
-        c.set_env(globa.args.env, env).save()
+        c.set_env(env).save()
     elif a.cmd == 'remove':
         env = config.get_env()
         c.remove_env(globa.args.env).save()
@@ -210,6 +211,7 @@ def kill_cmd(p):
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -229,6 +231,7 @@ def logs_cmd(p):
     b = 'logs '
     if p.follow:
         b += '-f '
+    env = config.get_env()
     if p.loop:
         while True:
             biz.docker_compose_cmd(b+p.container, env)
@@ -243,6 +246,7 @@ def add_nginx_force_reload_cmd(s):
 
 
 def nginx_force_reload_cmd(p):
+    env = config.get_env()
     return biz.exec(biz.docker_cmd_template(env,
                                             "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
 
@@ -254,6 +258,7 @@ def add_nginx_reload_cmd(s):
 
 
 def nginx_reload_cmd(p):
+    env = config.get_env()
     return biz.docker_compose_cmd('exec -T nginx nginx -s reload', env)
 
 
@@ -288,6 +293,7 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
+    env = config.get_env()
     return biz.docker_compose_cmd("ps", env)
 
 
@@ -302,6 +308,7 @@ def pull_cmd(p):
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -330,6 +337,7 @@ def restart_cmd(p):
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -349,6 +357,7 @@ def rm_cmd(p):
         b += ' ' + ' '.join(p.container)
     elif not p.force and not biz.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -363,6 +372,7 @@ def start_cmd(p):
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -377,6 +387,7 @@ def stop_cmd(p):
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -411,6 +422,7 @@ def up_cmd(p):
     b = 'up -d --remove-orphans'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 

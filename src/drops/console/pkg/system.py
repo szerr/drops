@@ -20,7 +20,7 @@ import paramiko
 import os
 
 
-class client():
+class SSH():
     def __init__(self, env):
         self.encoding = env.encoding
         self._client = SSHClient()
@@ -48,7 +48,8 @@ class client():
                     env.host, port=env.port, username=env.username, key_filename=identity_file)
             else:
                 # 没有的话 paramiko 会寻找 ssh 预设的 key
-                self._client.connect(env.host, port=env.port, username=env.username)
+                self._client.connect(
+                    env.host, port=env.port, username=env.username)
                 # raise er.PwdAndKeyCannotBeEmpty
 
     def exec(self, b, show=True):

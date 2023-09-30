@@ -22,9 +22,20 @@ import os
 from . import globa
 from . import er
 
+ENV_REMOTE = 'remote'
+ENV_LOCAL = 'local'
+
+
+def join_path(*p):
+    # 用 `/` 字符连接路径
+    p_li = []
+    for i in p:
+        p_li.append('/'.join([i for i in os.path.split(i) if i]))
+    return '/'.join(p_li)
+
 
 class Environment():
-    def __init__(self, env, type, host='', port='', username='', encoding='', 
+    def __init__(self, env, type, host='', port='', username='', encoding='',
                  deploy_path='', identity_file='', password=''):
         self.host = host
         self.port = port
@@ -33,22 +44,12 @@ class Environment():
         self.password = password
         self.env = env
         self.encoding = encoding
-        self._deploy_path = deploy_path
-        if type in ('remote', 'local'):
+        self.deploy_path = deploy_path
+        if type in (ENV_REMOTE, ENV_LOCAL):
             self.type = type
         else:
-            raise er.ArgsError('env can only be local or remote.')
-
-    def set_deploy_path(self, path):
-        self._deploy_path = path
-
-    def get_deploy_path(self, project_name=None):
-        if not self._deploy_path:
-            if project_name:
-                return '/srv/drops/' + project_name
-            else:
-                raise er.NoProjectNameOrDeploymentSet
-        return self._deploy_path
+            raise er.ArgsError('env can only be %s or %s.' %
+                               (ENV_REMOTE, ENV_LOCAL))
 
     def to_conf(self):
         data = {
@@ -57,8 +58,8 @@ class Environment():
             'username': self.username,
             'encoding': self.encoding
         }
-        if self._deploy_path:
-            data['deploy_path'] = self._deploy_path
+        if self.deploy_path:
+            data['deploy_path'] = self.deploy_path
         if self.password:
             data['password'] = self.password
         if self.identity_file:
@@ -72,8 +73,47 @@ class Environment():
     def __str__(self) -> str:
         return str(
             {'host': self.host, 'port': self.port, 'username': self.username, 'identity_file': self.identity_file,
-             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self._deploy_path,
+             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self.deploy_path,
              'type': self.type})
+
+    def path_join(self, *p):
+        # 用 `/` 字符连接路径
+        sep = '/'
+
+        # 去掉所有分隔符
+        p_li = [i for l in p for i in l.split(sep) if i]
+
+        start = ''
+        end = ''
+        if p[0].startswith(sep):
+            start = sep
+        if not p[-1] or p[-1].endswith(sep):
+            end = sep
+        return start + sep.join(p_li) + end
+
+    def container_path(self):
+        return self.deploy_path
+
+    def servers_path(self):
+        return self.deploy_path + '/servers'
+
+    def docker_compose_path(self):
+        return self.deploy_path + '/docker-compose.yaml'
+
+    def release_path(self):
+        # 发布路径
+        return self.deploy_path + '/release'
+
+    def volumes_path(self):
+        # volumes路径
+        return self.deploy_path + '/volumes'
+
+    def var_path(self):
+        return self.deploy_path + '/var'
+
+    def docker_cmd_template(self, cmd):
+        # 执行 docker-compose 命令的模板
+        return 'cd ' + self.container_path() + ' && docker-compose %s' % cmd
 
 
 def gen_env_by_args(args):
@@ -81,16 +121,19 @@ def gen_env_by_args(args):
                        deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password,
                        type=args.env_type)
 
+
 class Conf():
     # 封装配置文件
     def __init__(self):
         self._data = {
             'env': {}
         }
+        self.work_path = os.getcwd()
 
     def open(self, path=None):
         if not path:
             path = globa.args.config
+        self.work_path, _ = os.path.split(path)
         with open(path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
         if 'project' not in c:
@@ -126,15 +169,15 @@ class Conf():
 
     def init_template(self, name):
         self._data = {'env': {
-            'local':{
-                'deploy_path':'.',
+            'local': {
+                'deploy_path': '.',
                 'type': 'local',
             }
         },
             'project': {
                 'name': name,
                 'default_env': 'local',
-            },
+        },
         }
         return self
 
@@ -199,20 +242,21 @@ class Conf():
     def has_default_env(self):
         return self._data.get('project', {}).get('default_env', False) and True
 
-    def get_default_env(self)->Environment:
+    def get_default_env(self) -> Environment:
         default_env = self._data.get('project', {}).get('default_env', None)
         if default_env:
             return self.get_env(default_env)
         raise er.NoDefaultEnvironmentIsSet
 
+
 def get_env():
     # 处理全局参数，读取配置文件，按优先级替换 env 参数
     conf = Conf().open(globa.args.config)
     if globa.args.env:
-        if globa.conf.has_env(globa.args.env):
-            env = globa.conf.get_env(globa.args.env)
+        if conf.has_env(globa.args.env):
+            env = conf.get_env(globa.args.env)
         else:
-            env = Environment(globa.args.env, 'local')
+            env = Environment(globa.args.env, ENV_REMOTE)  # 默认 env 类型是远程
     elif conf.has_default_env():
         env = conf.get_default_env()
     else:
@@ -232,7 +276,7 @@ def get_env():
     if globa.args.encoding:
         env.encoding = globa.args.encoding
     if globa.args.deploy_path:
-        env.set_deploy_path(globa.args.deploy_path)
-    if globa.args.type:
+        env.deploy_path = globa.args.deploy_path
+    if globa.args.env_type:
         env.type = globa.args.type
     return env

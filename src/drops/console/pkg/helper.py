@@ -31,16 +31,3 @@ def join_path(*p):
 def work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
     return os.getcwd()
-
-
-def deploy_path(env):
-    return env.get_deploy_path()
-
-
-def volumes_path(env):
-    # volumes路径
-    return join_path(deploy_path(env), 'volumes')
-
-
-def docker_compose_path(env):
-    return os.path.join(work_path(), 'docker-compose.yaml')
