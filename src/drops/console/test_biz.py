@@ -82,8 +82,6 @@ class TestRsync(unittest.TestCase):
         biz.rsync_docker(self.env)
         print(self.cmd_list)
 
-    def test_sync(self):
-
 
 if __name__ == '__main__':
     biz.log._LEVEL = biz.log.OFF
