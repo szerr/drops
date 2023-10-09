@@ -473,43 +473,6 @@ def add_build_cmd(s):
 def build_cmd(arg):
     pli = arg.project
     return biz.build_src(arg.dest, arg.clear, arg.project)
-    if not pli:
-        pli = os.listdir('src/')
-    cwd = os.getcwd()
-    for p_path in pli:
-        print('--- build', p_path, '---')
-        script_dir = os.path.join('src', p_path, 'drops')
-        output_dir = os.path.join(arg.dest, p_path)
-        if not os.path.isdir(script_dir):
-            log.warn("There is no script for project", p_path)
-            continue
-
-        # 支持的脚本类型，按优先级排列
-        for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
-            f = 'build.'+e
-            log.debug('test', b, f)
-            if os.path.isfile(os.path.join(script_dir, f)) and biz.command_exists(b):
-                os.chdir(script_dir)
-                # 编译前是否清理目标目录
-                if os.path.isdir(output_dir):
-                    if arg.clear:
-                        shutil.rmtree(output_dir)
-                        os.makedirs(output_dir)
-                else:
-                    os.makedirs(output_dir)
-
-                # 传给脚本输出目录的绝对路径
-                bin = b + ' ' + f + ' --dest ' + os.path.abspath(output_dir)
-                log.debug('run>', bin)
-                exit_code = biz.system(bin)
-                if exit_code:
-                    # log.warning("build exit", exit_code)
-                    return exit_code
-                os.chdir(cwd)
-                break
-        else:
-            log.warn("No supported build script found.")
-    return 0
 
 # debug 模式下可用的命令：
 
