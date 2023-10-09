@@ -27,8 +27,8 @@ ENV_TYPE_LOCAL = 'local'
 
 
 class Environment():
-    def __init__(self, env, type, host='', port='', username='', encoding='',
-                 deploy_path='', identity_file='', password=''):
+    def __init__(self, env, type, deploy_path, host='', port='',
+                 username='', encoding='', identity_file='', password=''):
         self.host = host
         self.port = port
         self.username = username
@@ -36,7 +36,7 @@ class Environment():
         self.password = password
         self.env = env
         self.encoding = encoding
-        self._deploy_path = deploy_path
+        self.deploy_path = deploy_path
         if type in (ENV_TYPE_REMOVE, ENV_TYPE_LOCAL):
             self.type = type
         else:
@@ -49,15 +49,15 @@ class Environment():
         return '/'.join(p_li)
 
     def set_deploy_path(self, path):
-        self._deploy_path = path
+        self.deploy_path = path
 
     def get_deploy_path(self, project_name=None):
-        if not self._deploy_path:
+        if not self.deploy_path:
             if project_name:
                 return '/srv/drops/' + project_name
             else:
                 raise er.NoProjectNameOrDeploymentSet
-        return self._deploy_path
+        return self.deploy_path
 
     def join_deploy_path(self, *p):
         return self.join_path(self.get_deploy_path(), 'servers')
@@ -93,10 +93,9 @@ class Environment():
             'host': self.host,
             'port': self.port,
             'username': self.username,
-            'encoding': self.encoding
+            'encoding': self.encoding,
+            'deploy_path': self.get_deploy_path(),
         }
-        if self._deploy_path:
-            data['deploy_path'] = self._deploy_path
         if self.password:
             data['password'] = self.password
         if self.identity_file:
@@ -110,8 +109,23 @@ class Environment():
     def __str__(self) -> str:
         return str(
             {'host': self.host, 'port': self.port, 'username': self.username, 'identity_file': self.identity_file,
-             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self._deploy_path,
+             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self.get_deploy_path(),
              'type': self.type})
+
+    def path_join(self, *p):
+        # 用 `/` 字符连接路径
+        sep = '/'
+
+        # 去掉所有分隔符
+        p_li = [i for l in p for i in l.split(sep) if i]
+
+        start = ''
+        end = ''
+        if p[0].startswith(sep):
+            start = sep
+        if not p[-1] or p[-1].endswith(sep):
+            end = sep
+        return start + sep.join(p_li) + end
 
 
 def gen_env_by_args(args):
@@ -126,10 +140,12 @@ class Conf():
         self._data = {
             'env': {}
         }
+        self.work_path = os.getcwd()
 
     def open(self, path=None):
         if not path:
             path = globa.args.config
+        self.work_path, _ = os.path.split(path)
         with open(path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
         if 'project' not in c:
@@ -233,7 +249,10 @@ class Conf():
         raise er.EnvDoesNotExist(name)
 
     def project_name(self):
-        return self._data.get('project', {}).get('name', "")
+        pname = self._data.get('project', {}).get('name', "")
+        if pname:
+            return pname
+        raise er.ProjectNameCannotBeEmpty
 
     def has_default_env(self):
         return self._data.get('project', {}).get('default_env', False) and True
@@ -252,7 +271,8 @@ def get_env() -> Environment:
         if conf.has_env(globa.args.env):
             env = conf.get_env(globa.args.env)
         else:
-            env = Environment(globa.args.env, ENV_TYPE_REMOVE)
+            # 先设置 deploy_path 为空，后边会自动设置或报错。
+            env = Environment(globa.args.env, ENV_TYPE_REMOVE, deploy_path='')
     elif conf.has_default_env():
         env = conf.get_default_env()
     else:
@@ -271,8 +291,11 @@ def get_env() -> Environment:
         env.password = globa.args.password
     if globa.args.encoding:
         env.encoding = globa.args.encoding
-    if globa.args.deploy_path:
-        env.set_deploy_path(globa.args.deploy_path)
     if globa.args.env_type:
         env.type = globa.args.type
+    if globa.args.deploy_path:
+        env.deploy_path = globa.args.deploy_path
+    # 如果没有设置部署路径，使用默认路径
+    if not env.deploy_path:
+        env.deploy_path = env.join_path('/srv/drops/', conf.project_name())
     return env

@@ -112,7 +112,7 @@ def add_deploy_cmd(s):
 
 def deploy_cmd(p):
     env = config.get_env()
-    s = biz.sync(env, p.force)
+    s = biz.rsync_ops(env, p.force)
     if s:
         return s
     return biz.docker_compose_cmd("up -d", env)
@@ -322,7 +322,7 @@ def add_redeploy_cmd(s):
 def redeploy_cmd(p):
     env = config.get_env()
 
-    biz.sync(env, p.force)
+    biz.rsync_ops(env, p.force)
     return biz.docker_compose_cmd("up -d --build --remove-orphans", env)
 
 
@@ -407,7 +407,20 @@ var, volumes 建议只用来同步初始数据。
 
 def sync_cmd(p):
     env = config.get_env()
-    return biz.sync(env, p.force, p.obj)
+    if p.obj == 'ops':
+        return biz.rsync_ops(env, p.force)
+    elif p.obj == 'docker':
+        return biz.rsync_docker(env, p.force)
+    elif p.obj == 'release':
+        return biz.rsync_release(env, p.force)
+    elif p.obj == 'servers':
+        return biz.rsync_servers(env, p.force)
+    elif p.obj == 'var':
+        return biz.rsync_var(env, p.force)
+    elif p.obj == 'volumes':
+        return biz.rsync_volumes(env, p.force)
+    else:
+        raise er.UnsupportedSyncObject(p.obj)
 
 
 def add_up_cmd(s):

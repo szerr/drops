@@ -51,7 +51,7 @@ def check_messy_env(assertEqual, args, env):
     assertEqual(args.identity_file, env.identity_file)
     assertEqual(args.password, env.password)
     assertEqual(args.encoding, env.encoding)
-    assertEqual(args.deploy_path, env.get_deploy_path())
+    assertEqual(args.deploy_path, env.deploy_path)
     assertEqual(args.env_type, env.type)
 
 
@@ -63,5 +63,5 @@ def check_env(assertEqual, env1, env2):
     assertEqual(env1.identity_file, env2.identity_file)
     assertEqual(env1.password, env2.password)
     assertEqual(env1.encoding, env2.encoding)
-    assertEqual(env1.get_deploy_path(), env2.get_deploy_path())
+    assertEqual(env1.deploy_path, env2.deploy_path)
     assertEqual(env1.type, env2.type)

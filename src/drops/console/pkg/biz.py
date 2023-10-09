@@ -39,7 +39,6 @@ def work_path():
     return os.getcwd()
 
 
-
 def new_project(name, path):
     os.chdir(path)
     os.mkdir(name)
@@ -165,20 +164,20 @@ def ssh_shell(env, b):
 def rsync_release(env, force=False):
     print('------- sync release -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'release', env.get_deploy_path())
+    return rsync2remotely(env, 'release', env.deploy_path)
 
 
 def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path(env))
+    return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path())
 
 
 def rsync_servers(env, force=False):
     print('------- sync servers -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'servers', env.get_deploy_path())
+    return rsync2remotely(env, 'servers', env.deploy_path)
 
 
 def rsync_ops(env, force=False):
@@ -186,7 +185,7 @@ def rsync_ops(env, force=False):
     detection_cmd('rsync')
     exclude = [i for i in os.listdir(work_path()) if
                not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
-    return rsync2remotely(env, '.', env.get_deploy_path(), exclude)
+    return rsync2remotely(env, '.', env.deploy_path, exclude)
 
 
 def rsync_var(env, force):
@@ -200,34 +199,13 @@ def rsync_volumes(env, force):
     return rsync2remotely(env, 'volumes', env.get_deploy_path())
 
 
-def sync(env, force=False, obj='ops'):
-    # rsync 不会创建上一层文件夹，同步前创建
+def mkdir_deploy(env):
+    # 创建远程文件夹
     c = system.SSH(env)
-    if force:  # rsync 只同步文件时，不会创建当前文件夹。在判断是否是 drops 项目时会自动创建，但是 --force 会绕过。在 -f 生效时直接创建文件夹。
-        _, status = c.exec(' mkdir -p ' + env.get_deploy_path())
-    else:
-        _, status = c.exec(' mkdir -p ' + env.get_deploy_path())
-        # if not confirm_drops_project(c):
-        #     if not user_confirm("环境 %s 主机 %s 远程目录 %s 可能不是 drops 项目，继续同步可能会导致丢失数据。是否继续？" % (env.env, env.host, env.get_deploy_path())):
-        #         raise er.UserCancel
+    _, status = c.exec(' mkdir -p ' + env.get_deploy_path())
     if status != 0:
         raise er.CmdExecutionError(
             'mkdir -p ' + env.get_deploy_path() + ', code=' + str(status))
-    arg = (env, force)
-    if obj == 'ops':
-        return rsync_ops(*arg)
-    elif obj == 'docker':
-        return rsync_docker(*arg)
-    elif obj == 'release':
-        return rsync_release(*arg)
-    elif obj == 'servers':
-        return rsync_servers(*arg)
-    elif obj == 'var':
-        return rsync_var(*arg)
-    elif obj == 'volumes':
-        return rsync_volumes(*arg)
-    else:
-        raise er.UnsupportedSyncObject(obj)
 
 
 def rsync_backup(env, src, target, link_desc=''):
@@ -371,32 +349,6 @@ def user_confirm(*l):
     return False
 
 
-def confirm_drops_project(client):
-    # 防止出现同步时误删除，同步前检查目录。目录存在返回0，否则返回1
-    while True:
-        _, s = client.exec(
-            '''if [ -d %s ]; then exit 0; else exit 1; fi''' % env.get_deploy_path(), False)
-        if s != -1:
-            break
-    # 目录不存在时可以安全同步，创建项目目录
-    if s == 1:
-        client.exec('''mkdir -p ''' + env.get_deploy_path(), False)
-        return True
-
-    b = '''if [ -f %s ] && [ -d %s ]; then exit 0; else exit 1; fi''' % (
-        env.get_deploy_path() + '/docker-compose.yaml', env.get_deploy_path() + '/servers')
-
-    while True:
-        _, s = client.exec(b, False)
-        # 这条命令很容易返回 -1，貌似是 paramiko 的锅。重试。
-        if s != -1:
-            break
-    # 目录存在，却没有 docker-compose 或 servers，可能不是 drops 项目
-    if s == 0:
-        return True
-    return False
-
-
 def determine_drops_folder(env, path):
     # 返回 path 是否是空目录
     c = system.SSH(env)
@@ -490,11 +442,11 @@ def monitor_path(path, command, intervals):
     if command:
         p = process(command, intervals)
         p.start()
-        observer.schedule(Filesystem.systemEventHander(
+        observer.schedule(watchdog.events.Filesystem.systemEventHander(
             p.add_event), path, recursive=True)
     else:
         # 如果没有命令参数，收到事件后退出。
-        observer.schedule(Filesystem.systemEventHander(
+        observer.schedule(watchdog.events.Filesystem.systemEventHander(
             lambda: sys.exit(0)), path, recursive=True)
     observer.start()
 

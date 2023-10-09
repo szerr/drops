@@ -22,7 +22,7 @@ import os
 try:
     from . import globa
 except:
-    import drops.console.internal.globa as globa
+    import drops.console.pkg.globa as globa
 
 # self.args 是类接收到的所有参数。这样写只是为了少些两行代码，忽视可维护和语法检查。
 
@@ -36,17 +36,26 @@ class ThisIsNotDropsProject(DropsErr):
         cwd = os.path.split(os.getcwd())[-1]
         return '"%s" is not a drops project, drops.yaml does not exist.' % cwd
 
+
 class NoProjectNameOrDeploymentSet(DropsErr):
     def __str__(self):
         return 'No project name or deployment path set.'
+
+
+class ProjectNameCannotBeEmpty(DropsErr):
+    def __str__(self):
+        return 'Project name cannot be empty.'
+
 
 class RemotePathIsNotDropsProject(DropsErr):
     def __str__(self):
         return 'Remote host "%s" is not a drops project, docker-compose.yaml does not exist.' % self.args[0]
 
+
 class FileOrFolderDoesNotExist(DropsErr):
     def __str__(self):
         return 'File or folder does not exist.' + self.args[0]
+
 
 class UserCancel(DropsErr):
     def __str__(self):
@@ -57,9 +66,11 @@ class ConfigFileAlreadyExists(DropsErr):
     def __str__(self):
         return '%s already exists.' % globa.config_file
 
+
 class FileOrDirAlreadyExists(DropsErr):
     def __str__(self):
         return 'File or directory already exists: ' + ''.join(self.args)
+
 
 class PwdAndKeyCannotBeEmpty(DropsErr):
     def __str__(self):
@@ -69,6 +80,7 @@ class PwdAndKeyCannotBeEmpty(DropsErr):
 class ArgsError(DropsErr):
     def __str__(self):
         return 'Args error: %s.' % (' '.join(self.args))
+
 
 class UnsupportedSyncObject(DropsErr):
     def __str__(self) -> str:
@@ -94,9 +106,11 @@ class ConfigurationFileFormatError(DropsErr):
     def __str__(self):
         return 'Configuration file format error.'
 
+
 class ConfigurationFileMissObj(DropsErr):
     def __str__(self):
-        return 'The configuration file is missing %s.'% self.args[0]
+        return 'The configuration file is missing %s.' % self.args[0]
+
 
 class EnvDoesNotExist(DropsErr):
     def __str__(self):
@@ -113,14 +127,18 @@ class CmdExecutionError(DropsErr):
         return 'Command execution error: "%s".' % self.args[0]
 
 # 不能同时设置 env 和 host
+
+
 class EnvHostSimult(DropsErr):
     def __str__(self):
         return 'Cannot set env(-e) and host(-H) simultaneously.'
 
+
 class EnvParameterRequired(DropsErr):
     def __str__(self) -> str:
         return 'The env(-e, --env) parameter is required.'
-    
+
+
 class NoDefaultEnvironmentIsSet(DropsErr):
     def __str__(self) -> str:
         return 'No default environment is set.'
