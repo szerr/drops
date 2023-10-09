@@ -217,6 +217,8 @@ def rsync_backup(env, src, target, link_desc=''):
 
 
 def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep_backups=-1, cod=False, force=False):
+    if not os.path.isdir(target):
+        os.mkdir(target)
     backup2dir = target
     link_dir = link_desc
     if cod:  # 创建项目名的文件夹
@@ -230,17 +232,17 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
     back_li = []
     if obj == 'all':
         back_li = [
-            [env.release_path() + '/', backup2dir.format(obj='release')],
-            [env.servers_path() + '/', backup2dir.format(obj='servers')],
-            [env.var_path() + '/', backup2dir.format(obj='var')],
-            [env.volumes_path() + '/', backup2dir.format(obj='volumes')],
+            [env.release_path_dir(), backup2dir.format(obj='release')],
+            [env.servers_path_dir(), backup2dir.format(obj='servers')],
+            [env.var_path_dir(), backup2dir.format(obj='var')],
+            [env.volumes_path_dir(), backup2dir.format(obj='volumes')],
             [env.docker_compose_path(), backup2dir.format(
                 obj='docker-compose.yaml')],
         ]
     elif obj == 'ops':
         back_li = [
-            [env.release_path() + '/', backup2dir.format(obj='release')],
-            [env.servers_path() + '/', backup2dir.format(obj='servers')],
+            [env.release_path_dir(), backup2dir.format(obj='release')],
+            [env.servers_path_dir(), backup2dir.format(obj='servers')],
             [env.docker_compose_path(), backup2dir.format(
                 obj='docker-compose.yaml')],
         ]
@@ -251,19 +253,19 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         ]
     elif obj == 'release':
         back_li = [
-            [env.release_path() + '/', backup2dir.format(obj='release')],
+            [env.release_path_dir(), backup2dir.format(obj='release')],
         ]
     elif obj == 'servers':
         back_li = [
-            [env.servers_path() + '/', backup2dir.format(obj='servers')],
+            [env.servers_path_dir(), backup2dir.format(obj='servers')],
         ]
     elif obj == 'var':
         back_li = [
-            [env.var_path() + '/', backup2dir.format(obj='var')],
+            [env.var_path_dir(), backup2dir.format(obj='var')],
         ]
     elif obj == 'volumes':
         back_li = [
-            [env.volumes_path() + '/', backup2dir.format(obj='volumes')],
+            [env.volumes_path_dir(), backup2dir.format(obj='volumes')],
         ]
     else:
         raise er.UnsupportedBackupObject(obj)

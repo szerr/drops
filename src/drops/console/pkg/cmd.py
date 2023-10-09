@@ -77,9 +77,6 @@ def add_backup_cmd(s):
 
 def backup_cmd(p):
     env = config.get_env()
-
-    if not os.path.isdir(p.target):
-        os.mkdir(p.target)
     return biz.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
 
 
