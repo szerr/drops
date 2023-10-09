@@ -91,13 +91,6 @@ def add_deploy_https_cert_cmd(s):
     p.set_defaults(func=deploy_https_cert_cmd)
 
 
-def add_deploy_cmd(s):
-    p = s.add_parser(
-        'deploy', help='部署并启动服务。')
-    biz.add_arg_force(p)
-    p.set_defaults(func=deploy_cmd)
-
-
 def deploy_https_cert_cmd(p):
     env = config.get_env()
     b = 'exec -T acme.sh redeploy-ssl'
@@ -108,6 +101,13 @@ def deploy_https_cert_cmd(p):
     print("开始申请证书，如果出现文件复制失败，请确认 nginx 容器是否正常运行。")
     print("如果域名没有变动，acme.sh 不会重新申请证书。--force 强制重新申请证书。")
     return biz.docker_compose_cmd(b, env)
+
+
+def add_deploy_cmd(s):
+    p = s.add_parser(
+        'deploy', help='部署并启动服务。')
+    biz.add_arg_force(p)
+    p.set_defaults(func=deploy_cmd)
 
 
 def deploy_cmd(p):
@@ -125,9 +125,10 @@ def add_echo_paths_cmd(s):
 
 
 def deploy_echo_paths_cmd(p):
-    print('容器路径，docker-compose.yaml 所在文件夹:', biz.container_path())
-    print('发布路径，应用程序文件夹:', biz.release_path())
-    print('volumes 路径，应用程序数据文件夹:', biz.volumes_path())
+    env = config.get_env()
+    print('容器路径，docker-compose.yaml 所在文件夹:', env.container_path())
+    print('发布路径，应用程序文件夹:', env.release_path())
+    print('volumes 路径，应用程序数据文件夹:', env.volumes_path())
     return 0
 
 
@@ -145,8 +146,9 @@ def add_exec_cmd(s):
 
 def exec_cmd(p):
     failed_times = 0
+    env = config.get_env()
     while True:
-        status = biz.exec(env, biz.docker_cmd_template(
+        status = biz.exec(env, env.docker_cmd_template(
             "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
         if p.restart:
             if status:
@@ -210,6 +212,7 @@ def kill_cmd(p):
     b = 'kill'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -229,6 +232,7 @@ def logs_cmd(p):
     b = 'logs '
     if p.follow:
         b += '-f '
+    env = config.get_env()
     if p.loop:
         while True:
             biz.docker_compose_cmd(b+p.container, env)
@@ -243,8 +247,8 @@ def add_nginx_force_reload_cmd(s):
 
 
 def nginx_force_reload_cmd(p):
-    return biz.exec(biz.docker_cmd_template(env,
-                                            "exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
+    env = config.get_env()
+    return biz.exec(env.docker_cmd_template("exec -T nginx nginx -g 'daemon on; master_process on;' -s reload"), env)
 
 
 def add_nginx_reload_cmd(s):
@@ -254,6 +258,7 @@ def add_nginx_reload_cmd(s):
 
 
 def nginx_reload_cmd(p):
+    env = config.get_env()
     return biz.docker_compose_cmd('exec -T nginx nginx -s reload', env)
 
 
@@ -288,6 +293,7 @@ def add_ps_cmd(s):
 
 
 def ps_cmd(p):
+    env = config.get_env()
     return biz.docker_compose_cmd("ps", env)
 
 
@@ -302,6 +308,7 @@ def pull_cmd(p):
     b = 'pull'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -330,6 +337,7 @@ def restart_cmd(p):
     b = 'restart'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -349,6 +357,7 @@ def rm_cmd(p):
         b += ' ' + ' '.join(p.container)
     elif not p.force and not biz.user_confirm('确认删除所有容器？'):
         raise er.UserCancel
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -363,6 +372,7 @@ def start_cmd(p):
     b = 'start'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -377,6 +387,7 @@ def stop_cmd(p):
     b = 'stop'
     if p.container:
         b += ' ' + ' '.join(p.container)
+    env = config.get_env()
     return biz.docker_compose_cmd(b, env)
 
 
@@ -396,7 +407,6 @@ var, volumes 建议只用来同步初始数据。
 
 def sync_cmd(p):
     env = config.get_env()
-
     return biz.sync(env, p.force, p.obj)
 
 
@@ -409,6 +419,7 @@ def add_up_cmd(s):
 
 def up_cmd(p):
     b = 'up -d --remove-orphans'
+    env = config.get_env()
     if p.container:
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
@@ -522,7 +533,7 @@ def add_undeploy_cmd(s):
 
 def undeploy_cmd(p):
     env = config.get_env()
-    if not p.force and not biz.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+biz.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
+    if not p.force and not biz.user_confirm('即将进行反部署，这会清理掉服务器上的容器及 '+env.container_path()+' 目录，但不会完全删除映射文件。是否继续？'):
         raise er.UserCancel
 
     status = 0
@@ -534,5 +545,5 @@ def undeploy_cmd(p):
     status = biz.docker_compose_cmd('rm -f', env)
     if status:
         return
-    print('-------- rm -rf %s --------' % biz.container_path())
-    return biz.exec('rm -rf %s' % biz.container_path(), env)
+    print('-------- rm -rf %s --------' % env.container_path())
+    return biz.exec('rm -rf %s' % env.container_path(), env)

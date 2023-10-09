@@ -22,6 +22,9 @@ import os
 from . import globa
 from . import er
 
+ENV_TYPE_REMOVE = 'remote'
+ENV_TYPE_LOCAL = 'local'
+
 
 class Environment():
     def __init__(self, env, type, host='', port='', username='', encoding='',
@@ -34,10 +37,16 @@ class Environment():
         self.env = env
         self.encoding = encoding
         self._deploy_path = deploy_path
-        if type in ('remote', 'local'):
+        if type in (ENV_TYPE_REMOVE, ENV_TYPE_LOCAL):
             self.type = type
         else:
             raise er.ArgsError('env can only be local or remote.')
+
+    def join_path(self, *p):
+        p_li = []
+        for i in p:
+            p_li.append('/'.join([i for i in os.path.split(i) if i]))
+        return '/'.join(p_li)
 
     def set_deploy_path(self, path):
         self._deploy_path = path
@@ -49,6 +58,35 @@ class Environment():
             else:
                 raise er.NoProjectNameOrDeploymentSet
         return self._deploy_path
+
+    def join_deploy_path(self, *p):
+        return self.join_path(self.get_deploy_path(), 'servers')
+
+    def docker_cmd_template(self, cmd):
+        if self.type == ENV_TYPE_REMOVE:
+            return 'cd ' + self.get_deploy_path() + ' && docker-compose %s' % cmd
+        # 如果没有指定 env，在本地执行不需要 cd
+        return 'docker-compose %s' % cmd
+
+    def container_path(self):
+        return self.get_deploy_path()
+
+    def servers_path(self):
+        return self.join_deploy_path('servers')
+
+    def docker_compose_path(self):
+        return self.join_deploy_path('docker-compose.yaml')
+
+    def release_path(self):
+        # 发布路径
+        return self.join_deploy_path('release')
+
+    def var_path(self):
+        return self.join_deploy_path('var')
+
+    def volumes_path(self):
+        # volumes路径
+        return self.join_deploy_path('volumes')
 
     def to_conf(self):
         data = {
@@ -207,14 +245,14 @@ class Conf():
         raise er.NoDefaultEnvironmentIsSet
 
 
-def get_env():
+def get_env() -> Environment:
     # 处理全局参数，读取配置文件，按优先级替换 env 参数
     conf = Conf().open(globa.args.config)
     if globa.args.env:
         if conf.has_env(globa.args.env):
             env = conf.get_env(globa.args.env)
         else:
-            env = Environment(globa.args.env, 'local')
+            env = Environment(globa.args.env, ENV_TYPE_REMOVE)
     elif conf.has_default_env():
         env = conf.get_default_env()
     else:
