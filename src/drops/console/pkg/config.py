@@ -60,7 +60,7 @@ class Environment():
         return self.deploy_path
 
     def join_deploy_path(self, *p):
-        return self.join_path(self.get_deploy_path(), 'servers')
+        return self.join_path(self.get_deploy_path(), *p)
 
     def docker_cmd_template(self, cmd):
         if self.type == ENV_TYPE_REMOVE:

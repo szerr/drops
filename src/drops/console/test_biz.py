@@ -9,8 +9,9 @@ from pkg import biz
 class TestNew(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
+        os.chdir(self.test_dir.name)
         self.project_name = 'te' + randstr(3)
-        self.args = gen_messy_args()
+        self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
         self.env = pkg.config.gen_env_by_args(self.args)
         # 替换依赖项目
@@ -41,7 +42,7 @@ class TestRsync(unittest.TestCase):
         self.test_dir = tempfile.TemporaryDirectory()
         os.chdir(self.test_dir.name)
         self.project_name = 'te' + randstr(3)
-        self.args = gen_messy_args()
+        self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
         self.env = pkg.config.gen_env_by_args(self.args)
         self.cmd_list = []
@@ -80,7 +81,69 @@ class TestRsync(unittest.TestCase):
     def test_rsync_docker(self):
         os.getcwd()
         biz.rsync_docker(self.env)
-        print(self.cmd_list)
+
+
+class TestBackup(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.TemporaryDirectory()
+        os.chdir(self.test_dir.name)
+        self.project_name = 'te' + randstr(3)
+        self.args = gen_messy_args(self.project_name)
+        pkg.globa.args = self.args
+        self.env = pkg.config.gen_env_by_args(self.args)
+        self.cmd_list = []
+        # 替换依赖项目
+        biz.rsync_backup = lambda *i: self.cmd_list.append(i)
+
+    def tearDown(self):
+        self.test_dir.cleanup()
+
+    def verify_call(self, *items):
+        self.assertEqual(len(items), len(self.cmd_list))
+        for k in items:
+            source_path = '/srv/drops/%s/%s' % (self.project_name, k)
+            target_path = 'backup/%s/' % (k)
+            for i in self.cmd_list:
+                if source_path == i[1]:
+                    break
+            else:
+                self.assertEqual(source_path, ','.join(
+                    [i[1] for i in self.cmd_list]))
+            for i in self.cmd_list:
+                if target_path in i[2]:
+                    break
+            else:
+                self.assertEqual(target_path, ','.join(
+                    [i[2] for i in self.cmd_list]))
+
+    def test_backup_all(self):
+        biz.backup(self.env, 'all', 'backup')
+        self.verify_call('release', 'servers', 'var',
+                         'volumes', 'docker-compose.yaml')
+
+    def test_backup_ops(self):
+        biz.backup(self.env, 'ops', 'backup')
+        self.verify_call('release', 'servers', 'docker-compose.yaml')
+
+    def test_backup_docker(self):
+        biz.backup(self.env, 'docker', 'backup')
+        self.verify_call('docker-compose.yaml')
+
+    def test_backup_release(self):
+        biz.backup(self.env, 'release', 'backup')
+        self.verify_call('release')
+
+    def test_backup_servers(self):
+        biz.backup(self.env, 'servers', 'backup')
+        self.verify_call('servers')
+
+    def test_backup_var(self):
+        biz.backup(self.env, 'var', 'backup')
+        self.verify_call('var')
+
+    def test_backup_volumes(self):
+        biz.backup(self.env, 'volumes', 'backup')
+        self.verify_call('volumes')
 
 
 if __name__ == '__main__':

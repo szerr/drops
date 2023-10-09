@@ -12,7 +12,8 @@ class TestConfig(unittest.TestCase):
         super().__init__(methodName)
 
     def setUp(self):
-        self.args = gen_messy_args()
+        self.project_name = randstr(4)
+        self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
         env = pkg.config.gen_env_by_args(self.args)
         self.env = env
@@ -34,7 +35,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(conf.project_name(), self.project_name)
         # 测试更改
         conf.remove_env(self.env.env)
-        self.args = gen_messy_args()
+        self.args = gen_messy_args(self.project_name)
         self.env = pkg.config.gen_env_by_args(self.args)
         conf.set_env(self.env)
         self.project_name = randstr(6)

@@ -303,7 +303,7 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
                 link_desc = os.path.join(
                     get_work_path(), target_path, link_dir)
             else:
-                print("%s 路径下没有找到合适的备份文件夹，--link-dest 功能关闭。" % target_path)
+                print("%s 路径下没有找到合适 link 的文件夹，--link-dest 功能关闭。" % target_path)
         s = rsync_backup(env, source_path, backup2path, link_desc)
         if s:
             return s

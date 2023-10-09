@@ -14,7 +14,7 @@ class virtualObj(dict):
         return self[name]
 
 
-def gen_messy_args():
+def gen_messy_args(project_name):
     # 随意的填一填命令行参数
     args = virtualObj(
         env='production'+randstr(3),
@@ -23,8 +23,8 @@ def gen_messy_args():
         username='root'+randstr(3),
         identity_file='~/.ssh/id_ed25519'+randstr(3),
         password=randstr(3),
+        deploy_path='/srv/drops/' + project_name,
         encoding='utf-8'+randstr(3),
-        deploy_path='/srv/drops/te'+randstr(3),
         config='drops.yaml'+randstr(3),
         env_type='remote',
     )
