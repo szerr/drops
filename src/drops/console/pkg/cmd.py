@@ -38,7 +38,7 @@ def add_new_cmd(s):
 
 
 def new_cmd(p):
-    if p.project_name in os.listdir(os.getcwd()):
+    if p.project_name in os.listdir(biz.get_work_path()):
         raise er.FileOrDirAlreadyExists(p.project_name)
     return biz.new_project(p.project_name, '.')
 
@@ -472,6 +472,7 @@ def add_build_cmd(s):
 
 def build_cmd(arg):
     pli = arg.project
+    return biz.build_src(arg.dest, arg.clear, arg.project)
     if not pli:
         pli = os.listdir('src/')
     cwd = os.getcwd()
@@ -517,24 +518,13 @@ def add_clean_up_cmd(s):
     p = s.add_parser(
         'clean', help='删除当前目录下 drops 所有相关文件。')
     biz.add_arg_force(p)
-    p.set_defaults(func=new_clean_up)
+    p.set_defaults(func=new_clean_up_cmd)
 
 
-def new_clean_up(p):
+def new_clean_up_cmd(p):
     if not p.force and not biz.user_confirm('是否清理掉当前目录的 drops 相关文件？'):
         raise er.UserCancel
-    objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    pwd = os.getcwd()
-    if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):
-        raise er.ThisIsNotDropsProject()
-    for i in os.listdir(objPath):
-        p = os.path.join(objPath, i)
-        t = os.path.join(pwd, i)
-        if os.path.isdir(p):
-            shutil.rmtree(t)
-        else:
-            os.remove(t)
-    return 0
+    return biz.clean_up()
 
 
 def add_undeploy_cmd(s):

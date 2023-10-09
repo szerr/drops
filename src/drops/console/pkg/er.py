@@ -142,3 +142,13 @@ class EnvParameterRequired(DropsErr):
 class NoDefaultEnvironmentIsSet(DropsErr):
     def __str__(self) -> str:
         return 'No default environment is set.'
+
+
+class NoScriptForProject(DropsErr):
+    def __str__(self) -> str:
+        return 'No scripts are in the "%s".' % self.args[0]
+
+
+class NoSupportedScriptFound(DropsErr):
+    def __str__(self) -> str:
+        return 'No supported script found.'

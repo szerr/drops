@@ -24,6 +24,7 @@ import watchdog.events
 import watchdog.observers
 import subprocess
 import threading
+from fnmatch import fnmatch
 
 import drops
 
@@ -34,7 +35,7 @@ from . import globa
 from . import helper
 
 
-def work_path():
+def get_work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
     return os.getcwd()
 
@@ -183,7 +184,7 @@ def rsync_servers(env, force=False):
 def rsync_ops(env, force=False):
     print('------- sync ops -------')
     detection_cmd('rsync')
-    exclude = [i for i in os.listdir(work_path()) if
+    exclude = [i for i in os.listdir(get_work_path()) if
                not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
     return rsync2remotely(env, '.', env.deploy_path, exclude)
 
@@ -298,7 +299,7 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
                 # link 目录是排序后最大的目录
                 link_dir = exist_li[0]
                 link_desc = os.path.join(
-                    work_path(), target_path, link_dir)
+                    get_work_path(), target_path, link_dir)
             else:
                 print("%s 路径下没有找到合适的备份文件夹，--link-dest 功能关闭。" % target_path)
         s = rsync_backup(env, source_path, backup2path, link_desc)
@@ -433,6 +434,63 @@ class process():
                 print("Number of file system.system events:", len(self._event_li))
                 self._event_li = []
                 self.restart()
+
+
+def clean_up():
+    objPath = os.path.join(drops.__path__[0], 'docker_ops')
+    pwd = get_work_path()
+    if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):
+        raise er.ThisIsNotDropsProject()
+    for i in os.listdir(objPath):
+        p = os.path.join(objPath, i)
+        t = os.path.join(pwd, i)
+        if os.path.isdir(p):
+            shutil.rmtree(t)
+        else:
+            os.remove(t)
+
+
+def build_src(dest, clear, project_li=[]):
+    if not project_li:
+        project_li = os.listdir('src/')
+    work_path = get_work_path()
+    for p_name in project_li:
+        log.info('--- build', p_name, '---')
+        script_dir = os.path.join(work_path, 'src', p_name, 'drops')
+        output_dir = os.path.join(dest, p_name)
+        if not os.path.isdir(script_dir):
+            raise er.NoScriptForProject(p_name)
+
+        # 支持的脚本类型和解释器，按优先级排列
+        for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
+            f = 'build.'+e
+            log.debug('test', b, f)
+            # 检查文件和相应解释器是否存在
+            if os.path.isfile(os.path.join(script_dir, f)) and command_exists(b):
+                break
+        else:
+            raise er.NoSupportedScriptFound(p_name)
+
+        # 到脚本所在目录执行
+        os.chdir(script_dir)
+        # 编译前是否清理目标目录
+        if os.path.isdir(output_dir):
+            if clear:
+                shutil.rmtree(output_dir)
+                os.makedirs(output_dir)
+        else:
+            os.makedirs(output_dir)
+
+        # 传给脚本输出目录的绝对路径
+        bin = b + ' ' + f + ' --dest ' + os.path.abspath(output_dir)
+        log.debug('run>', bin)
+        # 错误码透传
+        exit_code = system.system(bin)
+        if exit_code:
+            return exit_code
+        os.chdir(work_path)
+
+    return 0
 
 
 def monitor_path(path, command, intervals):
