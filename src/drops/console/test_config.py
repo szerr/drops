@@ -31,10 +31,10 @@ class TestConfig(unittest.TestCase):
         self.project_name = randstr(4)
         pkg.config.Conf().init_template(self.project_name).set_env(self.env).save()
         conf = pkg.config.Conf().open()
-        check_env(self.assertEqual, conf.get_env(self.env.env), self.env)
+        check_env(self.assertEqual, conf.get_env(self.env.name), self.env)
         self.assertEqual(conf.project_name(), self.project_name)
         # 测试更改
-        conf.remove_env(self.env.env)
+        conf.remove_env(self.env.name)
         self.args = gen_messy_args(self.project_name)
         self.env = pkg.config.gen_env_by_args(self.args)
         conf.set_env(self.env)
@@ -42,7 +42,7 @@ class TestConfig(unittest.TestCase):
         conf.set_project_name(self.project_name)
         conf.save()
         conf = pkg.config.Conf().open()
-        check_env(self.assertEqual, conf.get_env(self.env.env), self.env)
+        check_env(self.assertEqual, conf.get_env(self.env.name), self.env)
         self.assertEqual(conf.project_name(), self.project_name)
 
     def test_path_join(self):

@@ -84,7 +84,7 @@ def init_config(arg):
 
     # 有传参时替换掉对应的 env 属性。参数优先级高于配置文件。
     if arg.env:
-        env.env = arg.env
+        env.name = arg.env
     # env.host 为 False，ssh.client 执行时调用本地 os.system，在当前文件夹执行。其他情况调用 ssh。
     if arg.host:
         env.host = arg.host

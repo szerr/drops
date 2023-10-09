@@ -44,7 +44,7 @@ def check_messy_conf(assertTrue, args, conf):
 
 
 def check_messy_env(assertEqual, args, env):
-    assertEqual(args.env, env.env)
+    assertEqual(args.env, env.name)
     assertEqual(args.host, env.host)
     assertEqual(args.port, env.port)
     assertEqual(args.username, env.username)

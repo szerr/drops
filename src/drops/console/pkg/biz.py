@@ -330,7 +330,7 @@ def exec(cmd, env, restart=False):
         print('command >', cmd)
         status = system.system(cmd)
     else:
-        print('run host >', env.env)
+        print('run host >', env.name)
         print('command >"', cmd)
         c = system.SSH(env)
         # 在远程路径下执行，要 cd 到项目目录

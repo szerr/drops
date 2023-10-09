@@ -27,14 +27,14 @@ ENV_TYPE_LOCAL = 'local'
 
 
 class Environment():
-    def __init__(self, env, type, deploy_path, host='', port='',
+    def __init__(self, name, type, deploy_path, host='', port='',
                  username='', encoding='', identity_file='', password=''):
         self.host = host
         self.port = port
         self.username = username
         self.identity_file = identity_file
         self.password = password
-        self.env = env
+        self.name = name
         self.encoding = encoding
         self.deploy_path = deploy_path
         if type in (ENV_TYPE_REMOVE, ENV_TYPE_LOCAL):
@@ -127,7 +127,7 @@ class Environment():
     def __str__(self) -> str:
         return str(
             {'host': self.host, 'port': self.port, 'username': self.username, 'identity_file': self.identity_file,
-             'password': '*', 'env': self.env, 'encoding': self.encoding, 'deploy_path': self.get_deploy_path(),
+             'password': '*', 'env': self.name, 'encoding': self.encoding, 'deploy_path': self.get_deploy_path(),
              'type': self.type})
 
     def path_join(self, *p):
@@ -147,7 +147,7 @@ class Environment():
 
 
 def gen_env_by_args(args):
-    return Environment(host=args.host, port=args.port, username=args.username, env=args.env, encoding=args.encoding,
+    return Environment(host=args.host, port=args.port, username=args.username, name=args.env, encoding=args.encoding,
                        deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password,
                        type=args.env_type)
 
@@ -202,6 +202,16 @@ class Conf():
             'local': {
                 'deploy_path': '.',
                 'type': 'local',
+            },
+            'example': {
+                'host': 'example.com',
+                'port': 22,
+                'username': 'root',
+                'identity_file': '/home/root/.ssh/id_ed25519',
+                'password': '',
+                'encoding': 'utf-8',
+                'type': 'remote',
+                'deploy_path': '/srv/drops/example',
             }
         },
             'project': {
@@ -212,8 +222,8 @@ class Conf():
         return self
 
     def set_env(self, env: Environment):
-        if env.env:
-            self._data['env'][env.env] = env.to_conf()
+        if env.name:
+            self._data['env'][env.name] = env.to_conf()
             return self
         else:
             raise er.ArgsError('env name')
@@ -263,7 +273,7 @@ class Conf():
     def get_env(self, name) -> Environment:
         # 获取单个 env
         if name in self._data.get('env', {}):
-            return Environment(env=name, **self._data['env'][name])
+            return Environment(name=name, **self._data['env'][name])
         raise er.EnvDoesNotExist(name)
 
     def project_name(self):
