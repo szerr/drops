@@ -28,45 +28,45 @@ base_bin = 'drops --debug '
 
 binLi = [
     # 远程部署
-    '-e production -H example.drops.icu env add',
+    '-e dev -H example.drops.icu env add',
     'env ls',
-    '-e production env change',
-    '-e production env remove',
-    '-H example.drops.icu -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e production -E utf-8 -d /srv/drops -c drops.yaml env add',
+    '-e dev env change',
+    '-e dev env remove',
+    '-H example.drops.icu -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e dev -E utf-8 -d /srv/drops -c drops.yaml env add',
     'env ls',
-    '-e production init-debian-env',
+    '-e dev init-debian-env',
     'project name example',
 
-    '-e production sync',
-    '-e production sync volumes',
-    '-e production sync var',
-    '-e production sync servers',
-    '-e production sync release',
-    '-e production sync docker',
+    '-e dev sync',
+    '-e dev sync volumes',
+    '-e dev sync var',
+    '-e dev sync servers',
+    '-e dev sync release',
+    '-e dev sync docker',
 
-    '-e production deploy',
+    '-e dev deploy',
     'ps',
-    '-e production nginx-reload',
-    '-e production nginx-force-reload',
+    '-e dev nginx-reload',
+    '-e dev nginx-force-reload',
     # 'deployHttpsKey',
-    '-e production stop nginx',
-    '-e production start nginx',
-    '-e production logs nginx',
-    '-e production kill nginx',
-    '-e production rm nginx -f',
-    '-e production up',
+    '-e dev stop nginx',
+    '-e dev start nginx',
+    '-e dev logs nginx',
+    '-e dev kill nginx',
+    '-e dev rm nginx -f',
+    '-e dev up',
 
     # build 相关
-    '-e production build server',
-    '-e production build',
-    '-e production sync',
-    '-e production restart',
+    '-e dev build server',
+    '-e dev build',
+    '-e dev sync',
+    '-e dev restart',
 
-    '-e production restart nginx',
-    '-e production stop',
-    '-e production rm -f',
-    '-e production backup all -d %Y-%m-%d_%H:%M:%S -k 1',
-    '-e production undeploy -f',
+    '-e dev restart nginx',
+    '-e dev stop',
+    '-e dev rm -f',
+    '-e dev backup all -d %Y-%m-%d_%H:%M:%S -k 1',
+    '-e dev undeploy -f',
     # 本地部署
     'up',
     'ps',
@@ -94,10 +94,12 @@ def testBin(b):
     if s != 0:
         raise BinErr(b)
 
+
 def clear():
     os.chdir(start_dir)
     if os.path.isdir(test_project_name):
         shutil.rmtree(test_project_name)
+
 
 def main():
     testBin('new ' + test_project_name)
