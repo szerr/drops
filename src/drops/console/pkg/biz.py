@@ -34,7 +34,7 @@ from . import config
 from . import globa
 from . import helper
 
-_work_path = os.getcwd()
+_work_path = ''
 
 
 def set_work_path(path):
@@ -44,7 +44,9 @@ def set_work_path(path):
 
 def get_work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
-    return _work_path
+    if _work_path:
+        return _work_path
+    return os.getcwd()
 
 
 def new_project(path):
@@ -225,17 +227,17 @@ def rsync_backup(env, src, target, link_desc=''):
 
 
 def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep_backups=-1, cod=False, force=False):
+    # 如果 time_format 为空，会导致备份路径到 target 目录，删掉已有的备份。
+    if not time_format:
+        raise er.ArgsError('time_format cannot be empty.')
+    time_format_dir = time.strftime(time_format)
     if not os.path.isdir(target):
         os.mkdir(target)
     backup2dir = target
-    link_dir = link_desc
     if cod:  # 创建项目名的文件夹
         backup2dir = os.path.join(backup2dir, config.Conf().project_name())
-    # 如果设定了时间格式
-    if time_format:
-        # 备份目录是备份对象下的时间目录
-        backup2dir = os.path.join(backup2dir, '{obj}')
-        # 如果设置了 link_desc
+    # 备份文件夹模板
+    backup2dir = os.path.join(backup2dir, '{obj}')
     # 需要备份的目录列表，路径结尾加上 / 代表同步目录下的文件，rsync 不会再创建一层目录。
     back_li = []
     if obj == 'all':
@@ -277,42 +279,56 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         ]
     else:
         raise er.UnsupportedBackupObject(obj)
-    for source_path, target_path in back_li:
-        if not os.path.isdir(target_path):
-            os.mkdir(target_path)
-        # 生成带有时间的备份路径
-        backup_time = time.strftime(time_format, time.localtime(time.time()))
-        backup2path = os.path.join(target_path, backup_time)
-        exist_li = os.listdir(target_path)
-        exist_li.sort(reverse=True)
+    for source_path, backup_path in back_li:
+        target_path = os.path.join(backup_path, time_format_dir)
+        if not os.path.isdir(backup_path):
+            os.makedirs(backup_path)
 
-        if not force and os.path.isdir(backup2path) and os.listdir(backup2path):
-            if not user_confirm("备份路径 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % backup2path):
-                raise er.UserCancel
+        # 查询已有的备份，准备做 --link-dest
+        exist_li = os.listdir(backup_path)
+        if time_format_dir in exist_li:
+            exist_li.remove(time_format_dir)  # 移除本次要备份的目录
 
-        # 如果本次要备份的路径已存在，移除掉，避免重复计算
-        if backup_time in exist_li:
-            exist_li.remove(backup_time)
-        if keep_backups > 0:  # 删除不需要保留的备份
-            for r in exist_li[keep_backups:]:
-                rd = os.path.join(target_path, r)
+        # 过滤出符合 time_format 的文件夹
+        exist_time_format_li = []
+        for i in exist_li:
+            try:
+                time.strptime(i, time_format)
+                exist_time_format_li.append(i)
+            except ValueError as e:
+                pass
+        exist_time_format_li.sort(reverse=True)
+        # 删除不需要保留的备份
+        if keep_backups > 0:
+            for r in exist_time_format_li[keep_backups:]:
+                rd = os.path.join(backup_path, r)
                 print('delete backup:', rd)
                 # docker-compose.yaml 是文件，其他是目录
                 if os.path.isdir(rd):
                     shutil.rmtree(rd)
                 else:
                     os.remove(rd)
-            exist_li = exist_li[keep_backups:]
+            exist_time_format_li = exist_time_format_li[:keep_backups]
 
-        if not link_desc:  # 没有传入 link desc，自动寻找最新备份执行 link desc。
-            if exist_li:
-                # link 目录是排序后最大的目录
-                link_dir = exist_li[0]
-                link_desc = os.path.join(
-                    get_work_path(), target_path, link_dir)
+        # 处理 link_desc
+        link = link_desc
+        if link_desc:
+            if not link_desc in exist_li:
+                raise er.ArgsError(
+                    'link_desc: %s does not exist in the %s directory' % (link_desc, backup_path))
+        else:  # 没有设置的话自动查找最大的文件夹
+            if exist_time_format_li:
+                link = os.path.join(
+                    get_work_path(), backup_path, exist_time_format_li[0])
             else:
-                print("%s 路径下没有找到合适 link 的文件夹，--link-dest 功能关闭。" % target_path)
-        s = rsync_backup(env, source_path, backup2path, link_desc)
+                log.info("%s 路径下没有找到合适 link 的文件夹，--link-dest 功能关闭。" %
+                         backup_path)
+
+        if not force and os.path.isdir(target_path) and os.listdir(target_path):
+            if not user_confirm("备份路径 %s 已存在且非空，继续同步可能会导致文件丢失，是否继续同步？" % target_path):
+                raise er.UserCancel
+
+        s = rsync_backup(env, source_path, target_path, link)
         if s:
             return s
     return 0

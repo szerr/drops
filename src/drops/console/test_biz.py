@@ -4,6 +4,7 @@ import tempfile
 from test_lib import gen_messy_args, check_messy_conf, randstr
 import pkg
 from pkg import biz
+import time
 
 
 class TestNew(unittest.TestCase):
@@ -98,7 +99,7 @@ class TestBackup(unittest.TestCase):
     def tearDown(self):
         self.test_dir.cleanup()
 
-    def verify_call(self, *items):
+    def verify_call(self, link_desc='', *items):
         self.assertEqual(len(items), len(self.cmd_list))
         for k in items:
             source_path = '/srv/drops/%s/%s' % (self.project_name, k)
@@ -115,35 +116,55 @@ class TestBackup(unittest.TestCase):
             else:
                 self.assertEqual(target_path, ','.join(
                     [i[2] for i in self.cmd_list]))
+            if link_desc:
+                if i in self.cmd_list:
+                    link = os.path.join(self.test_dir.name,
+                                        'backup', k, link_desc)
+                    self.assertEqual(link, i[3])
 
     def test_backup_all(self):
-        biz.backup(self.env, 'all', 'backup')
-        self.verify_call('release', 'servers', 'var',
+        backup_path = 'backup'
+        biz.backup(self.env, 'all', backup_path)
+        self.verify_call('', 'release', 'servers', 'var',
+                         'volumes', 'docker-compose.yaml')
+
+        # 顺便做 --link-dest 的测试
+        bak_tag = randstr(4)
+        bak_tag_time = bak_tag + '199'
+        for t in range(10):
+            tag = bak_tag_time + str(t)
+            for i in ('release', 'servers', 'var', 'volumes'):
+                os.makedirs(os.path.join(backup_path, i, tag))
+            with open(os.path.join(os.path.join(backup_path, 'docker-compose.yaml'), tag), 'w') as fd:
+                pass
+        self.cmd_list = []
+        biz.backup(self.env, 'all', 'backup', bak_tag+'%Y')
+        self.verify_call(tag, 'release', 'servers', 'var',
                          'volumes', 'docker-compose.yaml')
 
     def test_backup_ops(self):
         biz.backup(self.env, 'ops', 'backup')
-        self.verify_call('release', 'servers', 'docker-compose.yaml')
+        self.verify_call('', 'release', 'servers', 'docker-compose.yaml')
 
     def test_backup_docker(self):
         biz.backup(self.env, 'docker', 'backup')
-        self.verify_call('docker-compose.yaml')
+        self.verify_call('', 'docker-compose.yaml')
 
     def test_backup_release(self):
         biz.backup(self.env, 'release', 'backup')
-        self.verify_call('release')
+        self.verify_call('', 'release')
 
     def test_backup_servers(self):
         biz.backup(self.env, 'servers', 'backup')
-        self.verify_call('servers')
+        self.verify_call('', 'servers')
 
     def test_backup_var(self):
         biz.backup(self.env, 'var', 'backup')
-        self.verify_call('var')
+        self.verify_call('', 'var')
 
     def test_backup_volumes(self):
         biz.backup(self.env, 'volumes', 'backup')
-        self.verify_call('volumes')
+        self.verify_call('', 'volumes')
 
 
 if __name__ == '__main__':

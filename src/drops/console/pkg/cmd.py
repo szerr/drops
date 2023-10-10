@@ -65,11 +65,11 @@ def add_backup_cmd(s):
     p.add_argument('-t', '--target',
                    help="目标路径", default='backup')
     p.add_argument('-d', '--time-format', default='%Y-%m-%d_%H:%M:%S',
-                   help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S')
+                   help='目标路径下创建文件夹名的时间模板，与 python time.strftime format 参数相同。如 %%Y-%%m-%%d_%%H:%%M:%%S。也可以写字符串当 tag 用。')
     p.add_argument('-l', '--link-dest',
                    help='未更改时链接到指定文件夹。默认是备份路径中符合 format 排序后最大的文件夹。')
     p.add_argument('-k', '--keep-backups',
-                   type=int, help="保留的备份个数，只有 format 开启时启用。本次备份也算一个。-1 保留所有。", default='-1')
+                   type=int, help="保留的备份个数，只管理符合 time-format 的文件夹。-1 保留所有。", default='-1')
     p.add_argument("-c", '--cod',
                    help="在目标路径创建项目名命名的文件夹", default=False, action='store_true')
     p.add_argument("-f", '--force',
@@ -78,6 +78,8 @@ def add_backup_cmd(s):
 
 def backup_cmd(p):
     env = config.get_env()
+    if not p.time_format:
+        raise er.ArgsError('time_format cannot be empty.')
     return biz.backup(env,  p.obj, p.target, p.time_format, p.link_dest, p.keep_backups, p.cod, p.force)
 
 
