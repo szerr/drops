@@ -116,11 +116,13 @@ class TestBackup(unittest.TestCase):
             else:
                 self.assertEqual(target_path, ','.join(
                     [i[2] for i in self.cmd_list]))
+            # 测试 link
             if link_desc:
                 if i in self.cmd_list:
                     link = os.path.join(self.test_dir.name,
                                         'backup', k, link_desc)
                     self.assertEqual(link, i[3])
+            # 测试保留备份
             if keep_backups > 0:
                 exist_li = os.listdir(target_path)
                 self.assertEqual(len(exist_li), keep_backups)
@@ -133,7 +135,7 @@ class TestBackup(unittest.TestCase):
         self.verify_call('', 'release', 'servers', 'var',
                          'volumes', 'docker-compose.yaml')
 
-        # 顺便做 --link-dest 的测试
+        # 顺便做 --link-dest 和 保留备份 的测试
         bak_tag = randstr(4)
         bak_tag_time = bak_tag + '199'
         for t in range(10):
