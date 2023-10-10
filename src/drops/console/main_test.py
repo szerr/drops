@@ -20,13 +20,14 @@
 # 跑一个完整的部署测试
 
 import os
+import sys
 import shutil
 
 test_project_name = 'te'
 start_dir = os.getcwd()
 base_bin = 'python3 ../main.py --debug '
 
-binLi = [
+remote_bin = [
     # 远程部署
     '-e dev -H example.drops.icu env add',
     'env ls',
@@ -56,18 +57,21 @@ binLi = [
     '-e dev rm -f',
     '-e dev backup all -d %Y-%m-%d_%H:%M:%S -k 1',
     '-e dev undeploy -f',
+]
+
+local_bin = [
     # 本地部署
-    # 'up',
-    # 'ps',
-    # 'stop nginx',
-    # 'start nginx',
-    # 'logs nginx',
-    # 'kill nginx',
-    # 'rm nginx -f',
-    # 'up',
-    # 'restart nginx',
-    # 'stop',
-    # 'rm -f',
+    'up',
+    'ps',
+    'stop nginx',
+    'start nginx',
+    'logs nginx',
+    'kill nginx',
+    'rm nginx -f',
+    'up',
+    'restart nginx',
+    'stop',
+    'rm -f',
 ]
 
 
@@ -98,13 +102,21 @@ def main():
         return
 
     os.chdir(test_project_name)
+    if 'remote' in sys.argv[1:]:
+        binLi = remote_bin
+    elif 'local' in sys.argv[1:]:
+        binLi = local_bin
+    else:
+        binLi = remote_bin + local_bin
+
     for b in binLi:
         b = base_bin + b
         print('run>', b)
         s = os.system(b)
         if s != 0:
             break
-    # clear()
+    if '-c' in sys.argv[1:]:
+        clear()
 
 
 if __name__ == '__main__':
