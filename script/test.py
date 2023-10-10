@@ -57,8 +57,7 @@ binLi = [
     '-e dev up',
 
     # build 相关
-    '-e dev build server',
-    '-e dev build',
+    'build server',
     '-e dev sync',
     '-e dev restart',
 
@@ -70,6 +69,7 @@ binLi = [
     # 本地部署
     'up',
     'ps',
+    'build server',
     'stop nginx',
     'start nginx',
     'logs nginx',

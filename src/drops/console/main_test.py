@@ -37,7 +37,7 @@ remote_bin = [
     'env ls',
     # '-e dev init-debian-env',
     'project name example',
-    '-e dev build server',
+    'build server',
     '-e dev sync -f',
     '-e dev sync volumes -f',
     '-e dev sync -f var',
@@ -63,6 +63,7 @@ local_bin = [
     # 本地部署
     'up',
     'ps',
+    'build server',
     'stop nginx',
     'start nginx',
     'logs nginx',
