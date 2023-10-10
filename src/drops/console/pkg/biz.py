@@ -101,40 +101,9 @@ def rsync2remotely(env, src, target, exclude=[]):
     log.run(echo_b)
     return system.system(b)
 
-
-def rsync2local(env, src, target):
-    # rsync 远程同步到本地
-    if env.identity_file:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i %s" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, port=env.port, username=env.username, host=env.host)
-        print(b % ('<key_path>'))
-        b = b % env.identity_file
-    else:
-        detection_cmd('sshpass')
-        b = 'sshpass -p %s rsync -avzP --del -e "ssh -p {port}" {username}@{host}:{src} {target}'.format(
-            src=src, target=target, port=env.port, username=env.username, host=env.host)
-        print(b % ('<password>'))
-        b = b % env.password
-    return system.system(b)
-
-
-def rsync2local_link_dest(env, src, target, link_dest):
-    # rsync 远程同步到本地，设置链接
-    if env.identity_file:
-        b = 'rsync -avzP --del -e "ssh -p {port} -i %s" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target, port=env.port, username=env.username, host=env.host, link_dest=link_dest)
-        print(b)
-        b = b % env.identity_file
-    else:
-        detection_cmd('sshpass')
-        b = 'sshpass -p {%s} rsync -avzP --del -e "ssh -p {port}" --link-dest={link_dest} {username}@{host}:{src} {target}'.format(
-            src=src, target=target, port=env.port, username=env.username, host=env.host, link_dest=link_dest)
-        print(b)
-        b = b % env.password
-    return system.system(b)
-
-
 # 多个命令会用到的参数
+
+
 def add_container_arg(p):
     p.add_argument('container', type=str,
                    help="docker container name", nargs=1)
@@ -220,10 +189,25 @@ def mkdir_deploy(env):
 
 
 def rsync_backup(env, src, target, link_desc=''):
-    detection_cmd('rsync')
+    # rsync 远程同步到本地
+    # 设置 link_desc
+    link = ''
     if link_desc:
-        return rsync2local_link_dest(env, src, target, link_desc)
-    return rsync2local(env, src, target)
+        link = '--link-dest='+link_desc
+
+    # 拼接命令
+    if env.identity_file:
+        temp = 'rsync -avzP --del -e "ssh -p {port} -i {identity_file}" {link_desc} {username}@{host}:{src} {target}'
+    else:
+        temp = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {link_desc} {username}@{host}:{src} {target}'
+
+    print(temp.format(src=src, target=target, port=env.port, username=env.username,
+                      host=env.host, identity_file='<identity_file>', password='<pwd>', link_desc=link))
+    cmd = temp.format(
+        src=src, target=target, port=env.port, username=env.username,
+        host=env.host, identity_file=env.identity_file,
+        password=env.password, link_desc=link)
+    return system.system(cmd)
 
 
 def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep_backups=-1, cod=False, force=False):
