@@ -88,23 +88,23 @@ class Environment():
         # volumes路径
         return self.join_deploy_path('volumes')
 
-    # 以 / 结尾代表文件夹
+    # 用 / 结尾代表文件夹
     def container_path_dir(self):
-        return self.get_deploy_path()
+        return self.get_deploy_path()+'/'
 
     def servers_path_dir(self):
-        return self.join_deploy_path('servers')
+        return self.join_deploy_path('servers', '')
 
     def release_path_dir(self):
         # 发布路径
-        return self.join_deploy_path('release')
+        return self.join_deploy_path('release', '')
 
     def var_path_dir(self):
-        return self.join_deploy_path('var')
+        return self.join_deploy_path('var', '')
 
     def volumes_path_dir(self):
         # volumes路径
-        return self.join_deploy_path('volumes')
+        return self.join_deploy_path('volumes', '')
 
     def to_conf(self):
         data = {

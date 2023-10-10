@@ -189,20 +189,24 @@ def mkdir_deploy(env):
 
 
 def rsync_backup(env, src, target, link_desc=''):
-    # rsync 远程同步到本地
+    # rsync 备份
     # 设置 link_desc
     link = ''
     if link_desc:
         link = '--link-dest='+link_desc
 
     # 拼接命令
-    if env.identity_file:
-        temp = 'rsync -avzP --del -e "ssh -p {port} -i {identity_file}" {link_desc} {username}@{host}:{src} {target}'
+    if env.type == config.ENV_TYPE_REMOVE:
+        if env.identity_file:
+            temp = 'rsync -avzP --del -e "ssh -p {port} -i {identity_file}" {link_desc} {username}@{host}:{src} {target}'
+        else:
+            detection_cmd('sshpass')
+            temp = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {link_desc} {username}@{host}:{src} {target}'
     else:
-        temp = 'sshpass -p {password} rsync -avzP --del -e "ssh -p {port}" {link_desc} {username}@{host}:{src} {target}'
+        temp = 'rsync -avP --del {link_desc} {src} {target}'
 
-    print(temp.format(src=src, target=target, port=env.port, username=env.username,
-                      host=env.host, identity_file='<identity_file>', password='<pwd>', link_desc=link))
+    log.run(temp.format(src=src, target=target, port=env.port, username=env.username,
+                        host=env.host, identity_file='<identity_file>', password='<pwd>', link_desc=link))
     cmd = temp.format(
         src=src, target=target, port=env.port, username=env.username,
         host=env.host, identity_file=env.identity_file,
