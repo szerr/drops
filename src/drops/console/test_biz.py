@@ -103,6 +103,8 @@ class TestBackup(unittest.TestCase):
         self.assertEqual(len(items), len(self.cmd_list))
         for k in items:
             source_path = '/srv/drops/%s/%s' % (self.project_name, k)
+            if not k.endswith('yaml'):
+                source_path += '/'  # '/' 结尾代表文件夹
             target_path = 'backup/%s/' % (k)
             for i in self.cmd_list:
                 if source_path == i[1]:
