@@ -56,7 +56,7 @@ def check_messy_env(assertEqual, args, env):
 
 
 def check_env(assertEqual, env1, env2):
-    assertEqual(env1.env, env2.env)
+    assertEqual(env1.name, env2.name)
     assertEqual(env1.host, env2.host)
     assertEqual(env1.port, env2.port)
     assertEqual(env1.username, env2.username)

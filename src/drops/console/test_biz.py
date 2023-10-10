@@ -21,7 +21,8 @@ class TestNew(unittest.TestCase):
         self.test_dir.cleanup()
 
     def test_new(self):
-        pkg.biz.new_project(self.project_name, self.test_dir.name)
+        pkg.biz.new_project(os.path.join(
+            self.test_dir.name, self.project_name))
         project_path = os.path.join(self.test_dir.name, self.project_name)
         self.assertTrue(os.path.isdir(project_path))
         conf_path = os.path.join(project_path, self.args.config)

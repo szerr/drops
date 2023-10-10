@@ -22,7 +22,7 @@ class TestRemoteEnv(unittest.TestCase):
         self.work_path.cleanup()
 
     def test_new(self):
-        pkg.cmd.new_cmd(virtualObj(project_name='te'))
+        pkg.cmd.new_cmd(virtualObj(project_path='te'))
         project_path = os.path.join(self.work_path.name, 'te')
         with open(os.path.join(project_path, self.args.config)) as fd:
             conf = fd.read()
