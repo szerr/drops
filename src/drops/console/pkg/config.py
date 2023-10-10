@@ -207,7 +207,7 @@ class Conf():
                 'host': 'example.com',
                 'port': 22,
                 'username': 'root',
-                'identity_file': '/home/root/.ssh/id_ed25519',
+                'identity_file': '~/.ssh/id_ed25519',
                 'password': '',
                 'encoding': 'utf-8',
                 'type': 'remote',
