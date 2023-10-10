@@ -99,7 +99,7 @@ class TestBackup(unittest.TestCase):
     def tearDown(self):
         self.test_dir.cleanup()
 
-    def verify_call(self, link_desc='', *items):
+    def verify_call(self, link_desc='', *items, keep_backups=-1, bak_tag=''):
         self.assertEqual(len(items), len(self.cmd_list))
         for k in items:
             source_path = '/srv/drops/%s/%s' % (self.project_name, k)
@@ -121,6 +121,11 @@ class TestBackup(unittest.TestCase):
                     link = os.path.join(self.test_dir.name,
                                         'backup', k, link_desc)
                     self.assertEqual(link, i[3])
+            if keep_backups > 0:
+                exist_li = os.listdir(target_path)
+                self.assertEqual(len(exist_li), keep_backups)
+                for i in list(range(10))[0-keep_backups:]:
+                    self.assertTrue(bak_tag+str(i) in exist_li)
 
     def test_backup_all(self):
         backup_path = 'backup'
@@ -138,9 +143,9 @@ class TestBackup(unittest.TestCase):
             with open(os.path.join(os.path.join(backup_path, 'docker-compose.yaml'), tag), 'w') as fd:
                 pass
         self.cmd_list = []
-        biz.backup(self.env, 'all', 'backup', bak_tag+'%Y')
+        biz.backup(self.env, 'all', 'backup', bak_tag+'%Y', keep_backups=3)
         self.verify_call(tag, 'release', 'servers', 'var',
-                         'volumes', 'docker-compose.yaml')
+                         'volumes', 'docker-compose.yaml', keep_backups=3, bak_tag=bak_tag_time)
 
     def test_backup_ops(self):
         biz.backup(self.env, 'ops', 'backup')
