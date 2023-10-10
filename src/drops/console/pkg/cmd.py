@@ -33,14 +33,15 @@ from . import log
 def add_new_cmd(s):
     p = s.add_parser(
         'new', help='Create a drops project.')
-    p.add_argument("project_name",  type=str, help="项目名。")
+    p.add_argument("project_path",  type=str,
+                   help="项目路径，使用最后一个文件夹作为项目名。")
     p.set_defaults(func=new_cmd)
 
 
 def new_cmd(p):
-    if p.project_name in os.listdir(biz.get_work_path()):
-        raise er.FileOrDirAlreadyExists(p.project_name)
-    return biz.new_project(p.project_name, '.')
+    if os.path.isdir(p.project_path) or os.path.isfile(p.project_path):
+        raise er.FileOrDirAlreadyExists(p.project_path)
+    return biz.new_project(p.project_path)
 
 
 def add_init_cmd(s):

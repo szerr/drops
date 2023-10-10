@@ -34,36 +34,44 @@ from . import config
 from . import globa
 from . import helper
 
+_work_path = os.getcwd()
+
+
+def set_work_path(path):
+    # 当前 drops 项目绝对路径，drops.yaml 所在目录
+    _work_path = os.path.abspath(path)
+
 
 def get_work_path():
     # 当前 drops 项目绝对路径，drops.yaml 所在目录
-    return os.getcwd()
+    return _work_path
 
 
-def new_project(name, path):
+def new_project(path):
+    name = os.path.split(path)[-1]
+    os.mkdir(path)
     os.chdir(path)
-    os.mkdir(name)
-    return init_project(name, os.path.join(path, name))
+    return init_project(name, path)
 
 
 def init_project(name, path):
+    set_work_path(path)
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     # 复制项目文件
     for i in os.listdir(objPath):
         s = os.path.join(objPath, i)
         t = os.path.join(path, i)
         if os.path.isdir(s):
-            shutil.copytree(s, t)
+            shutil.copytree(s, i)
         else:
-            shutil.copyfile(s, t)
-
+            shutil.copyfile(s, i)
     # 初始化配置
     if globa.args.env:
         env = config.gen_env_by_args(globa.args)
         config.Conf().init_template(name).set_env(
-            env).save(os.path.join(path, globa.args.config))
+            env).save(globa.args.config)
     else:
-        config.Conf().init_template(name).save(os.path.join(path, globa.args.config))
+        config.Conf().init_template(name).save(globa.args.config)
     return 0
 
 
@@ -440,12 +448,11 @@ class process():
 
 def clean_up():
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    pwd = get_work_path()
-    if not os.path.isfile(os.path.join(pwd, 'drops.yaml')):
+    if not os.path.isfile(os.path.join(get_work_path(), 'drops.yaml')):
         raise er.ThisIsNotDropsProject()
     for i in os.listdir(objPath):
         p = os.path.join(objPath, i)
-        t = os.path.join(pwd, i)
+        t = os.path.join(get_work_path(), i)
         if os.path.isdir(p):
             shutil.rmtree(t)
         else:
@@ -455,10 +462,9 @@ def clean_up():
 def build_src(dest, clear, project_li=[]):
     if not project_li:
         project_li = os.listdir('src/')
-    work_path = get_work_path()
     for p_name in project_li:
         log.info('--- build', p_name, '---')
-        script_dir = os.path.join(work_path, 'src', p_name, 'drops')
+        script_dir = os.path.join(get_work_path(), 'src', p_name, 'drops')
         output_dir = os.path.join(dest, p_name)
         if not os.path.isdir(script_dir):
             raise er.NoScriptForProject(p_name)
@@ -490,7 +496,7 @@ def build_src(dest, clear, project_li=[]):
         exit_code = system.system(bin)
         if exit_code:
             return exit_code
-        os.chdir(work_path)
+        os.chdir(get_work_path())
 
     return 0
 
