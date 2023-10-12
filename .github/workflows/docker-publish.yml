@@ -25,6 +25,9 @@ jobs:
         with:
           images: szerr/drops
 
+      - name: Debug action
+        uses: hmarr/debug-action@v2.1.0
+
       - name: Build and push latest Docker servers
         uses: docker/build-push-action@v5
         with:
