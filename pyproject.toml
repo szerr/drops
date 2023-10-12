@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drops"
-version = "v1.0.0"
+version = "v1.0.1"
 authors = [
   { name="szerr", email="i@szerr.org" },
 ]
