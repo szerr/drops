@@ -38,5 +38,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: szerr/drops:${{ steps.get_version.outputs.VERSION }}
+          tags: szerr/drops:${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
