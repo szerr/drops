@@ -7,6 +7,7 @@ if len(sys.argv) < 2:
     print("没有输入版本号")
     sys.exit(1)
 
+
 def main():
     os.chdir('..')
     version = sys.argv[1]
@@ -24,8 +25,9 @@ def main():
     if s != 0:
         raise Exception("cmd run error, code:", s)
 
-    os.system("gh release create " + version)
+    os.system("gh release create --generate-notes " + version)
     os.system("git pull")
+
 
 if __name__ == '__main__':
     main()
