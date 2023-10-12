@@ -23,8 +23,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: name/app
-      - name: Login to DockerHub
-        if: github.event_name != 'pull_request'
+
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
