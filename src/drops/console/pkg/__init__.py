@@ -18,6 +18,7 @@
 from .cmd import *
 from .globa import *
 from . import cmd
+from .version import __version__
 import sys
 
 

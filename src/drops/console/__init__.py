@@ -16,3 +16,5 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 from .main import *
+
+from .pkg import __version__

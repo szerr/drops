@@ -17,17 +17,12 @@
 
 
 import os
-import shutil
 import time
 
-import drops
-
-from . import helper
 from . import config
 from . import biz
 from . import er
 from . import globa
-from . import log
 
 
 def add_new_cmd(s):
@@ -42,6 +37,18 @@ def new_cmd(p):
     if os.path.isdir(p.project_path) or os.path.isfile(p.project_path):
         raise er.FileOrDirAlreadyExists(p.project_path)
     return biz.new_project(p.project_path)
+
+
+def add_version_cmd(s):
+    p = s.add_parser(
+        'version', help='输出版本号。')
+    p.set_defaults(func=version_cmd)
+
+
+def version_cmd(p):
+    from .version import __version__
+    print(__version__)
+    return 0
 
 
 def add_init_cmd(s):

@@ -78,7 +78,7 @@ local_bin = [
 
 docker_bin = [
     'build -t szerr/drops:dev ../../../..',
-    'run --rm --mount type=bind,source=`pwd`,target=/srv/drops szerr/drops:dev drops env ls'
+    'run --rm --mount type=bind,source=`pwd`,target=/srv/drops szerr/drops:dev drops version'
 ]
 
 
