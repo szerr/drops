@@ -7,4 +7,6 @@ COPY ./src/drops/drops.py  /usr/bin/drops
 
 ENV PYTHONPATH=/usr/lib/drops/
 
-CMD crond -f -d 8
+WORKDIR /srv/drops
+
+CMD drops
