@@ -33,7 +33,7 @@ remote_bin = [
     'env ls',
     '-e dev env change',
     '-e dev env remove',
-    '-H example.drops.icu -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e dev -E utf-8 -d /srv/drops -c drops.yaml env add',
+    '-H example.drops.icu -p 22 -u root -i ~/.ssh/id_ed25519 -P 1 -e dev -E utf-8 -d /srv/drops/test -c drops.yaml env add',
     'env ls',
     # '-e dev init-debian-env',
     'project name example',
