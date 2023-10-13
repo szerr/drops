@@ -11,8 +11,6 @@ if len(sys.argv) < 2:
 def main():
     os.chdir('..')
     version = sys.argv[1]
-    if version[0] != 'v':
-        version = 'v' + version
 
     # 设置文件的版本号
     with open('pyproject.toml.template') as fd:
