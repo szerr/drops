@@ -223,7 +223,8 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         os.mkdir(target)
     backup2dir = target
     if cod:  # 创建项目名的文件夹
-        backup2dir = os.path.join(backup2dir, config.Conf().project_name())
+        backup2dir = os.path.join(
+            backup2dir, env.project_name)
     # 备份文件夹模板
     backup2dir = os.path.join(backup2dir, '{obj}')
     # 需要备份的目录列表，路径结尾加上 / 代表同步目录下的文件，rsync 不会再创建一层目录。

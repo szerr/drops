@@ -28,15 +28,16 @@ ENV_TYPE_LOCAL = 'local'
 
 class Environment():
     def __init__(self, name, type, deploy_path, host='', port='',
-                 username='', encoding='', identity_file='', password=''):
+                 username='', encoding='', identity_file='', password='', project_name=''):
         self.host = host
         self.port = port
         self.username = username
         self.identity_file = identity_file
         self.password = password
-        self.name = name
         self.encoding = encoding
         self.deploy_path = deploy_path
+        self.name = name  # 动态赋值，不存在配置文件里
+        self.project_name = project_name  # 动态赋值，不存在配置文件里
         if type in (ENV_TYPE_REMOVE, ENV_TYPE_LOCAL):
             self.type = type
         else:
@@ -326,4 +327,5 @@ def get_env() -> Environment:
     # 如果没有设置部署路径，使用默认路径
     if not env.deploy_path:
         env.deploy_path = env.join_path('/srv/drops/', conf.project_name())
+    env.project_name = conf.project_name()
     return env
