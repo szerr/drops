@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drops"
-version = "v1.0.1"
+version = "v1.0.2"
 authors = [
   { name="szerr", email="i@szerr.org" },
 ]
@@ -20,7 +20,6 @@ classifiers = [
 dependencies = [
   "pyyaml >= 5.3",
   "paramiko >= 2.12",
-  "watchdog >= 3.0.0",
 ]
 
 [project.urls]
