@@ -22,10 +22,10 @@
 import os
 import sys
 import shutil
+import atexit
 
 test_project_name = 'te'
 start_dir = os.getcwd()
-base_bin = 'python3 ../main.py --debug '
 
 remote_bin = [
     # 远程部署
@@ -56,6 +56,7 @@ remote_bin = [
     '-e dev stop',
     '-e dev rm -f',
     '-e dev backup all -d %Y-%m-%d_%H:%M:%S -k 1',
+    '-e dev backup all -c -d %Y-%m-%d -t ./backup',
     '-e dev undeploy -f',
 ]
 
@@ -73,6 +74,11 @@ local_bin = [
     'restart nginx',
     'stop',
     'rm -f',
+]
+
+docker_bin = [
+    'build -t szerr/drops:dev ../../../..',
+    'run --rm --mount type=bind,source=`pwd`,target=/srv/drops szerr/drops:dev drops env ls'
 ]
 
 
@@ -97,27 +103,31 @@ def main():
     b = 'python3 main.py --debug new ' + test_project_name
     print(b)
     s = os.system(b)
+    atexit.register(lambda: '-c' in sys.argv[1:] and clear())
     if s != 0:
         print('create project error.')
-        clear()
         return
+
+    global remote_bin, local_bin, docker_bin
+    remote_bin = ['python3 ../main.py --debug ' + i for i in remote_bin]
+    local_bin = ['python3 ../main.py --debug ' + i for i in local_bin]
+    docker_bin = ['docker ' + i for i in docker_bin]
 
     os.chdir(test_project_name)
     if 'remote' in sys.argv[1:]:
         binLi = remote_bin
     elif 'local' in sys.argv[1:]:
         binLi = local_bin
+    elif 'docker' in sys.argv[1:]:
+        binLi = docker_bin
     else:
-        binLi = remote_bin + local_bin
+        binLi = remote_bin + local_bin + docker_bin
 
     for b in binLi:
-        b = base_bin + b
         print('run>', b)
         s = os.system(b)
         if s != 0:
             break
-    if '-c' in sys.argv[1:]:
-        clear()
 
 
 if __name__ == '__main__':
