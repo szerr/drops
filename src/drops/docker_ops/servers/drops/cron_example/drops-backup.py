@@ -2,6 +2,8 @@
 
 import os
 
+# 对多个项目做备份
+
 
 class CmdRunError(Exception):
     def __str__(self):
