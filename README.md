@@ -16,7 +16,7 @@ pip install --upgrade drops
 ### 初始化项目
 
 ```sh
-drops new example # 创建示例项目
+drops new example	# 创建示例项目
 cd example
 ```
 
@@ -33,9 +33,9 @@ drops ps
 
 ```sh
 drops -e dev -H <hostname> -p <port> -u root -i <~/.ssh/id_ed25519> -P <password> env add # 替换 <xx> 的相应信息，增加一个 dev 环境的连接配置。-i 和 -P 填其中一个就好。
-drops init_env_debian  # debian 系这样初始化远程环境
-drops -e dev deploy    # 同步项目目录到 /srv/drops/example 并启动容器。
-drops -e dev ps        # 查看容器运行状态
+drops init_env_debian # debian 系这样初始化远程环境
+drops -e dev deploy # 同步项目目录到 /srv/drops/example 并启动容器。
+drops -e dev ps # 查看容器运行状态
 ```
 
 如果 `init_env_debian` 出现问题，请手动安装 `rsync`、`docker` 和 `docker-compose`
@@ -48,21 +48,21 @@ podman-compose 和 docker-compose 并不兼容，会导致`drops`部署功能出
 
 ```yaml
 env:
-  example:          # 环境名，env 名。
+  example:			# 环境名，env 名。
     host: example.com	# 远程地址
-    port: 22        # 远程服务器 SSH 端口号
-    username: root  # 远程服务器 SSH 用户名
-    password: ''    # SSH 密码，明文记录，建议用 identity_file 做验证。
+    port: 22		# 远程服务器 SSH 端口号
+    username: root	# 远程服务器 SSH 用户名
+    password: ''	# SSH 密码，明文记录，建议用 identity_file 做验证。
     identity_file: ~/.ssh/id_ed25519	# SSH identity file，不填的话会自动搜索 ~/.ssh/ 或 ./secret/id_*
     deploy_path: /srv/drops/example		# 部署路径，默认 /srv/drops/<项目名>
-    encoding: utf-8	# 远程服务器编码，默认 utf-8
-    type: remote    # 环境类型，如果是 remote 会通过 SSH 执行部署和同步，如果是 local 只会在本地执行。
-  local:            # 默认有一个 local 配置，方便本地调试。
-    deploy_path: .  # 本地配置的部署路径可以是当前目录，也可以是其他路径
-    type: local     # 类型为 local
+    encoding: utf-8		# 远程服务器编码，默认 utf-8
+    type: remote		# 环境类型，如果是 remote 会通过 SSH 执行部署和同步，如果是 local 只会在本地执行。
+  local:				# 默认有一个 local 配置，方便本地调试。
+    deploy_path: .		# 本地配置的部署路径可以是当前目录，也可以是其他路径
+    type: local			# 类型为 local
 project:
-  default_env: local  # 没有 -e 指定 env 时默认使用的环境
-  name: te          # 项目名
+  default_env: local	# 没有 -e 指定 env 时默认使用的环境
+  name: te				# 项目名
 
 ```
 
@@ -124,7 +124,7 @@ project:
 | `-c`   | `--config`        | 指定读取的配置文件                                           |
 |        | --debug           | 解锁异常栈输出和 undeploy、clean                             |
 
-## 命令
+### 命令
 
 | drops 命令                  | 功能                                                         |
 | --------------------------- | ------------------------------------------------------------ |
@@ -134,7 +134,7 @@ project:
 | `deploy`                    | 同步后启动容器。                                             |
 | `redeploy`                  | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
 | `sync`                      | 同步项目到服务器。                                           |
-| `backup`                    | 备份远程目录到本地。如 `drops backup -d %Y-%m-%d_%H:%M:%S`   |
+| `backup`                    | 备份远程目录到本地。使用时间做文件夹实现增量备份，如 `drops backup -d %Y-%m-%d_%H:%M:%S` |
 | `ps`                        | 查看当前运行的容器。                                         |
 | `start`                     | 启动容器。                                                   |
 | `up`                        | 创建和启动容器。                                             |
