@@ -27,8 +27,8 @@ ENV_TYPE_LOCAL = 'local'
 
 
 class Environment():
-    def __init__(self, name, type, deploy_path, host='', port='',
-                 username='', encoding='', identity_file='', password='', project_name=''):
+    def __init__(self, name, type, deploy_path, host='', port=22,
+                 username='root', encoding='utf-8', identity_file='', password='', project_name=''):
         self.host = host
         self.port = port
         self.username = username
