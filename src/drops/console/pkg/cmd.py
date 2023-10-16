@@ -445,22 +445,22 @@ def up_cmd(p):
     return biz.docker_compose_cmd(b, env)
 
 
-def add_monitor_path_cmd(s):
+def add_watch_cmd(s):
     p = s.add_parser(
-        'monitor-path', help='监视指定路径，接收文件更改事件后返回，或循环执行命令。')
+        'watch', help='监视文件系统事件，执行传入的 command。触发事件后 SIGKILL command 进程并重启。没有 command 则阻塞直到有事件后返回。（测试功能）')
     p.add_argument("-p", '--path',  type=str,
                    help="指定监视的路径，默认 ./src", default='./src', nargs='?')
-    p.add_argument("-i", '--intervals',  type=int,
-                   help="重启命令的间隔时间，单位秒。默认5s。", default=5, nargs='?')
+    p.add_argument("-n", '--intervals',  type=int,
+                   help="重启之间等待的秒数。默认3s。", default=3, nargs='?')
     p.add_argument('command',  type=str,
-                   help="要执行的命令，遇到事件后杀掉并重启。", default=[], nargs='*')
+                   help="要执行的命令，触发事件后杀掉并重启。", default=[], nargs='*')
     biz.add_arg_container(p)
-    p.set_defaults(func=monitor_path_cmd)
+    p.set_defaults(func=watch_cmd)
 
 
-def monitor_path_cmd(p):
+def watch_cmd(p):
     # 监视文件夹，接受文件变动后返回0，或者执行命令。
-    return biz.monitor_path(p.path, p.command, p.intervals)
+    return biz.watch_path(p.path, p.command, p.intervals)
 
 
 def add_build_cmd(s):

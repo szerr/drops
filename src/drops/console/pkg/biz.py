@@ -22,8 +22,6 @@ import time
 import shutil
 import watchdog.events
 import watchdog.observers
-import subprocess
-import threading
 from fnmatch import fnmatch
 
 import drops
@@ -396,61 +394,6 @@ def command_exists(b) -> bool:
     return False
 
 
-class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
-    def __init__(self, fn):
-        super(FileSystemEventHander, self).__init__()
-        self.restart = fn
-
-    def on_any_event(self, event):
-        if event.event_type == 'modified':
-            self.restart(event)
-
-
-class process():
-    def __init__(self, command, intervals):
-        self._intervals = intervals  # 重启间隔时间
-        self._command_str = ' '.join(command)
-        self._command = [
-            i for i in self._command_str.split(' ') if i]  # 形成参数数组
-        self._process = None
-        self._event_li = []
-        self._run_status = True
-        self._t = threading.Thread(target=self.periodicRestart)
-        self._t.start()
-
-    def exit(self):
-        self._run_status = False
-        self.stop()
-
-    def start(self):
-        print("run>", self._command_str)
-        self._process = subprocess.Popen(
-            self._command, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-
-    def stop(self):
-        if self._process:
-            print("kill>", self._command_str)
-            self._process.kill()
-            print("Wait for exit...")
-            self._process.wait()
-
-    def restart(self):
-        self.stop()
-        self.start()
-
-    def add_event(self, e):
-        self._event_li.append(e)
-
-    def periodicRestart(self):
-        # 每次保存可能会触发多个更改事件，增加计时器减少重启的次数。
-        while self._run_status and not globa.thread_exit:
-            time.sleep(self._intervals)
-            if self._event_li:
-                print("Number of file system.system events:", len(self._event_li))
-                self._event_li = []
-                self.restart()
-
-
 def clean_up():
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     if not os.path.isfile(os.path.join(get_work_path(), 'drops.yaml')):
@@ -506,19 +449,31 @@ def build_src(dest, clear, project_li=[]):
     return 0
 
 
-def monitor_path(path, command, intervals):
+class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
+    def __init__(self, fn):
+        # 处理文件系统事件，对每个事件调用 fn
+        super(FileSystemEventHander, self).__init__()
+        self.fn = fn
+
+    def on_any_event(self, event):
+        if event.event_type == 'modified':
+            self.fn(event)
+
+
+def watch_path(path, command, intervals):
+    # 监视文件或文件夹路径，循环执行命令或退出。
     if not os.path.isdir(path) and not os.path.isfile(path):
         raise er.FileOrFolderDoesNotExist(path)
     observer = watchdog.observers.Observer()
     if command:
-        p = process(command, intervals)
+        p = helper.process(command, intervals)
         p.start()
-        observer.schedule(watchdog.events.Filesystem.systemEventHander(
-            p.add_event), path, recursive=True)
+        observer.schedule(FileSystemEventHander(p.add_event),
+                          path, recursive=True)
     else:
         # 如果没有命令参数，收到事件后退出。
-        observer.schedule(watchdog.events.Filesystem.systemEventHander(
-            lambda: sys.exit(0)), path, recursive=True)
+        observer.schedule(FileSystemEventHander(
+            lambda x: sys.exit(0)), path, recursive=True)
     observer.start()
 
     try:

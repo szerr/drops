@@ -48,22 +48,21 @@ podman-compose 和 docker-compose 并不兼容，会导致`drops`部署功能出
 
 ```yaml
 env:
-  example:			# 环境名，env 名。
-    host: example.com	# 远程地址
-    port: 22		# 远程服务器 SSH 端口号
-    username: root	# 远程服务器 SSH 用户名
-    password: ''	# SSH 密码，明文记录，建议用 identity_file 做验证。
-    identity_file: ~/.ssh/id_ed25519	# SSH identity file，不填的话会自动搜索 ~/.ssh/ 或 ./secret/id_*
-    deploy_path: /srv/drops/example		# 部署路径，默认 /srv/drops/<项目名>
-    encoding: utf-8		# 远程服务器编码，默认 utf-8
-    type: remote		# 环境类型，如果是 remote 会通过 SSH 执行部署和同步，如果是 local 只会在本地执行。
-  local:				# 默认有一个 local 配置，方便本地调试。
-    deploy_path: .		# 本地配置的部署路径可以是当前目录，也可以是其他路径
-    type: local			# 类型为 local
+  example: # 环境名，env 名。
+    host: example.com # 远程地址
+    port: 22 # 远程服务器 SSH 端口号
+    username: root # 远程服务器 SSH 用户名
+    password: "" # SSH 密码，明文记录，建议用 identity_file 做验证。
+    identity_file: ~/.ssh/id_ed25519 # SSH identity file，不填的话会自动搜索 ~/.ssh/ 或 ./secret/id_*
+    deploy_path: /srv/drops/example # 部署路径，默认 /srv/drops/<项目名>
+    encoding: utf-8 # 远程服务器编码，默认 utf-8
+    type: remote # 环境类型，如果是 remote 会通过 SSH 执行部署和同步，如果是 local 只会在本地执行。
+  local: # 默认有一个 local 配置，方便本地调试。
+    deploy_path: . # 本地配置的部署路径可以是当前目录，也可以是其他路径
+    type: local # 类型为 local
 project:
-  default_env: local	# 没有 -e 指定 env 时默认使用的环境
-  name: te				# 项目名
-
+  default_env: local # 没有 -e 指定 env 时默认使用的环境
+  name: te # 项目名
 ```
 
 ## 设计理念
@@ -110,19 +109,19 @@ project:
 
 为了保持灵活的交互界面，`drops` 执行时可以指定 `env` 的任意属性，覆盖配置文件。
 
-| 短参数 | 长参数            | 功能                                                         |
-| ------ | ----------------- | ------------------------------------------------------------ |
-| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env` |
-| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                        |
-| `-H`   | `--host`          | 主机名或ip                                                   |
-| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                     |
-| `-u`   | `--username`      | 用户名，默认 root                                            |
-| `-P`   | `--password`      | 密码，默认空                                                 |
-| `-i `  | `--identity-file` | SSH identity-file，和密码二选一，都不填的话会自动搜索 ~/.ssh/ 或 ./secret/id_* |
-| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                 |
-| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                   |
-| `-c`   | `--config`        | 指定读取的配置文件                                           |
-|        | --debug           | 解锁异常栈输出和 undeploy、clean                             |
+| 短参数 | 长参数            | 功能                                                                             |
+| ------ | ----------------- | -------------------------------------------------------------------------------- |
+| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env`                  |
+| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                                            |
+| `-H`   | `--host`          | 主机名或 ip                                                                      |
+| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                                         |
+| `-u`   | `--username`      | 用户名，默认 root                                                                |
+| `-P`   | `--password`      | 密码，默认空                                                                     |
+| `-i `  | `--identity-file` | SSH identity-file，和密码二选一，都不填的话会自动搜索 ~/.ssh/ 或 ./secret/id\_\* |
+| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                                     |
+| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                                       |
+| `-c`   | `--config`        | 指定读取的配置文件                                                               |
+|        | --debug           | 解锁异常栈输出和 undeploy、clean                                                 |
 
 ### 命令
 
@@ -144,8 +143,10 @@ project:
 | `rm`                        | 删除容器。                                                   |
 | `logs`                      | 输出容器日志。-f 持续输出。                                  |
 | `exec container cmd`        | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。  |
+| `watch`                     | 监视文件系统事件，执行传入的 command。                       |
 | `nginxReload`               | 重载`nginx`配置，但不会更新证书。                            |
 | `nginxForceReload`          | 重载`nginx`配置，会更新证书。                                |
+| `deployHttpsKey`            | 申请并部署 `https` 证书。                                    |
 | `deployHttpsKey`            | 申请并部署 `https` 证书。                                    |
 | `initDebianEnv`             | 初始化远程服务器环境`Debian`系用。                           |
 | `drops project <name>`      | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`的路径。 |
