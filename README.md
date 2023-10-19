@@ -67,13 +67,11 @@ project:
 
 ## 设计理念
 
-`drops` 使用`docker-compose`管理服务，基于`rsync`实现增量备份和数据同步。
+使用`docker-compose`编排服务，基于`rsync`实现增量备份和数据同步。用 `git `做版本控制。
 
 `drops` 推荐使用基础容器，将项目文件映射到容器中，而不是`build`时打包到容器。这样可以不依赖自建`docker`源。如果有定制需求，容器在部署时现场 `build`。
 
-用 `git `做版本控制，推荐除了模板项目中 `.gitignore` 外，服务配置，发布文件全做版本控制。
-
-`drops `兼做项目发布，`drops build` 会迭代 `src `下所有目录，执行其中的 `drops/build.xx` 脚本，发布到`release` 文件夹。用 `git` 做发布文件的版本控制。
+使用  `build` 命令发布项目，结合 `sync`，`deploy` 等命令实现服务部署，`git` 的版本控制实现回滚。`backup` 和 `sync` 实现备份迁移和预发布环境的快速搭建。
 
 ## 项目结构
 
