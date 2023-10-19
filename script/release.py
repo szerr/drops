@@ -20,7 +20,7 @@ def main():
     with open('src/drops/console/pkg/version.py', 'w') as fd:
         fd.write("__version__ = '%s'\n" % version)
 
-    b = "git add pyproject.toml && git commit -m %s && git push" % version
+    b = "git add pyproject.toml src/drops/console/pkg/version.py && git commit -m %s && git push" % version
     print(b)
     s = os.system(b)
     if s != 0:
