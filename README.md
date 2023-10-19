@@ -109,19 +109,19 @@ project:
 
 为了保持灵活的交互界面，`drops` 执行时可以指定 `env` 的任意属性，覆盖配置文件。
 
-| 短参数 | 长参数            | 功能                                                                             |
-| ------ | ----------------- | -------------------------------------------------------------------------------- |
-| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env`                  |
-| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                                            |
-| `-H`   | `--host`          | 主机名或 ip                                                                      |
-| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                                         |
-| `-u`   | `--username`      | 用户名，默认 root                                                                |
-| `-P`   | `--password`      | 密码，默认空                                                                     |
-| `-i `  | `--identity-file` | SSH identity-file，和密码二选一，都不填的话会自动搜索 ~/.ssh/ 或 ./secret/id\_\* |
-| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                                     |
-| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                                       |
-| `-c`   | `--config`        | 指定读取的配置文件                                                               |
-|        | --debug           | 解锁异常栈输出和 undeploy、clean                                                 |
+| 短参数 | 长参数            | 功能                                                         |
+| ------ | ----------------- | ------------------------------------------------------------ |
+| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env` |
+| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                        |
+| `-H`   | `--host`          | 主机名或 ip                                                  |
+| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                     |
+| `-u`   | `--username`      | 用户名，默认 `root`                                          |
+| `-P`   | `--password`      | 密码，默认空                                                 |
+| `-i `  | `--identity-file` | SSH `identity-file`，和密码二选一，都不填的话会自动搜索 `~/.ssh/` 或 `./secret/id_*` |
+| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                 |
+| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                   |
+| `-c`   | `--config`        | 指定读取的配置文件                                           |
+|        | `--debug`         | 输出异常栈，解锁 `undeploy`、`clean` 命令                    |
 
 ### 命令
 
@@ -175,7 +175,7 @@ project:
 
 非常欢迎你的加入！[提一个 Issue](https://github.com/szerr/drops/issues/new) 或者提交一个 Pull Request。
 
-标准 `Readme` 遵循 [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) 行为规范。
+标准 Readme 遵循 [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) 行为规范。
 
 ## 使用许可
 
