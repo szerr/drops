@@ -32,20 +32,6 @@ from . import config
 from . import globa
 from . import helper
 
-_work_path = ''
-
-
-def set_work_path(path):
-    # 当前 drops 项目绝对路径，drops.yaml 所在目录
-    _work_path = os.path.abspath(path)
-
-
-def get_work_path():
-    # 当前 drops 项目绝对路径，drops.yaml 所在目录
-    if _work_path:
-        return _work_path
-    return os.getcwd()
-
 
 def new_project(path):
     name = os.path.split(path)[-1]
@@ -55,7 +41,6 @@ def new_project(path):
 
 
 def init_project(name, path):
-    set_work_path(path)
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
     # 复制项目文件
     for i in os.listdir(objPath):
@@ -161,7 +146,7 @@ def rsync_servers(env, force=False):
 def rsync_ops(env, force=False):
     print('------- sync ops -------')
     detection_cmd('rsync')
-    exclude = [i for i in os.listdir(get_work_path()) if
+    exclude = [i for i in os.listdir(config.get_conf().work_path) if
                not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
     return rsync2remotely(env, '.', env.deploy_path, exclude)
 
@@ -306,7 +291,7 @@ def backup(env, obj, target, time_format='%Y-%m-%d_%H:%M:%S', link_desc='', keep
         else:  # 没有设置的话自动查找最大的文件夹
             if exist_time_format_li:
                 link = os.path.join(
-                    get_work_path(), backup_path, exist_time_format_li[0])
+                    config.get_conf().work_path, backup_path, exist_time_format_li[0])
             else:
                 log.info("%s 路径下没有找到合适 link 的文件夹，--link-dest 功能关闭。" %
                          backup_path)
@@ -396,11 +381,11 @@ def command_exists(b) -> bool:
 
 def clean_up():
     objPath = os.path.join(drops.__path__[0], 'docker_ops')
-    if not os.path.isfile(os.path.join(get_work_path(), 'drops.yaml')):
+    if not os.path.isfile(os.path.join(config.get_conf().work_path, 'drops.yaml')):
         raise er.ThisIsNotDropsProject()
     for i in os.listdir(objPath):
         p = os.path.join(objPath, i)
-        t = os.path.join(get_work_path(), i)
+        t = os.path.join(config.get_conf().work_path, i)
         if os.path.isdir(p):
             shutil.rmtree(t)
         else:
@@ -412,10 +397,13 @@ def build_src(dest, clear, project_li=[]):
         project_li = os.listdir('src/')
     for p_name in project_li:
         log.info('--- build', p_name, '---')
-        script_dir = os.path.join(get_work_path(), 'src', p_name, 'drops')
+        script_dir = os.path.join(
+            config.get_conf().work_path, 'src', p_name, 'drops')
         output_dir = os.path.join(dest, p_name)
         if not os.path.isdir(script_dir):
-            raise er.NoScriptForProject(p_name)
+            log.warn(er.NoDropsDirProject(p_name))
+            os.chdir(config.get_conf().work_path)
+            continue
 
         # 支持的脚本类型和解释器，按优先级排列
         for b, e in (('python3', 'py'), ('python', 'py'), ('bash', 'sh'), ('sh', 'sh'), ('cmd.exe', 'bat')):
@@ -444,7 +432,7 @@ def build_src(dest, clear, project_li=[]):
         exit_code = system.system(bin)
         if exit_code:
             return exit_code
-        os.chdir(get_work_path())
+        os.chdir(config.get_conf().work_path)
 
     return 0
 

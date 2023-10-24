@@ -144,9 +144,9 @@ class NoDefaultEnvironmentIsSet(DropsErr):
         return 'No default environment is set.'
 
 
-class NoScriptForProject(DropsErr):
+class NoDropsDirProject(DropsErr):
     def __str__(self) -> str:
-        return 'No scripts are in the "%s".' % self.args[0]
+        return 'No drops dir in the "%s".' % self.args[0]
 
 
 class NoSupportedScriptFound(DropsErr):

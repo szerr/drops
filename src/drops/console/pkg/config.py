@@ -164,7 +164,12 @@ class Conf():
     def open(self, path=None):
         if not path:
             path = globa.args.config
+
+        # 设置工作目录
         self.work_path, _ = os.path.split(path)
+        if not self.work_path:
+            self.work_path = os.getcwd()
+
         with open(path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
         if 'project' not in c:
@@ -293,9 +298,19 @@ class Conf():
         raise er.NoDefaultEnvironmentIsSet
 
 
+_CONF_OBJ = None
+
+
+def get_conf():
+    global _CONF_OBJ
+    if not _CONF_OBJ:
+        _CONF_OBJ = Conf().open(globa.args.config)
+    return _CONF_OBJ
+
+
 def get_env() -> Environment:
     # 处理全局参数，读取配置文件，按优先级替换 env 参数
-    conf = Conf().open(globa.args.config)
+    conf = get_conf()
     if globa.args.env:
         if conf.has_env(globa.args.env):
             env = conf.get_env(globa.args.env)
