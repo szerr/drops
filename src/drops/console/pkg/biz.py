@@ -402,7 +402,6 @@ def build_src(dest, clear, project_li=[]):
         output_dir = os.path.join(dest, p_name)
         if not os.path.isdir(script_dir):
             log.warn(er.NoDropsDirProject(p_name))
-            os.chdir(config.get_conf().work_path)
             continue
 
         # 支持的脚本类型和解释器，按优先级排列
@@ -417,6 +416,7 @@ def build_src(dest, clear, project_li=[]):
 
         # 到脚本所在目录执行
         os.chdir(script_dir)
+        log.info('chdir:', script_dir)
         # 编译前是否清理目标目录
         if os.path.isdir(output_dir):
             if clear:
