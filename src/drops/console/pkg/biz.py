@@ -52,7 +52,7 @@ def init_project(name, path):
             shutil.copyfile(s, i)
     # 初始化配置
     if globa.args.env:
-        env = config.gen_env_by_args(globa.args)
+        env = config.gen_env_by_args(name, globa.args)
         config.Conf().init_template(name).set_env(
             env).save(globa.args.config)
     else:

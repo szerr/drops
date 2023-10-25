@@ -15,7 +15,7 @@ class TestConfig(unittest.TestCase):
         self.project_name = randstr(4)
         self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
-        env = pkg.config.gen_env_by_args(self.args)
+        env = pkg.config.gen_env_by_args(self.project_name, self.args)
         self.env = env
         self.work_path = tempfile.TemporaryDirectory()
         os.chdir(self.work_path.name)
@@ -36,7 +36,7 @@ class TestConfig(unittest.TestCase):
         # 测试更改
         conf.remove_env(self.env.name)
         self.args = gen_messy_args(self.project_name)
-        self.env = pkg.config.gen_env_by_args(self.args)
+        self.env = pkg.config.gen_env_by_args(self.project_name, self.args)
         conf.set_env(self.env)
         self.project_name = randstr(6)
         conf.set_project_name(self.project_name)

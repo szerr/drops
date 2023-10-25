@@ -104,7 +104,7 @@ class HostExisted(DropsErr):
 
 class ConfigurationFileFormatError(DropsErr):
     def __str__(self):
-        return 'Configuration file format error.'
+        return 'Configuration file format error: %s' % self.args[0]
 
 
 class ConfigurationFileMissObj(DropsErr):

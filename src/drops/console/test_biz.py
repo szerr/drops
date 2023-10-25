@@ -14,7 +14,7 @@ class TestNew(unittest.TestCase):
         self.project_name = 'te' + randstr(3)
         self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
-        self.env = pkg.config.gen_env_by_args(self.args)
+        self.env = pkg.config.gen_env_by_args(self.project_name, self.args)
         # 替换依赖项目
 
     def tearDown(self):
@@ -46,7 +46,7 @@ class TestRsync(unittest.TestCase):
         self.project_name = 'te' + randstr(3)
         self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
-        self.env = pkg.config.gen_env_by_args(self.args)
+        self.env = pkg.config.gen_env_by_args(self.project_name, self.args)
         self.cmd_list = []
         # 替换依赖项目
         biz.system.system = lambda i: self.cmd_list.append(i)
@@ -92,7 +92,9 @@ class TestBackup(unittest.TestCase):
         self.project_name = 'te' + randstr(3)
         self.args = gen_messy_args(self.project_name)
         pkg.globa.args = self.args
-        self.env = pkg.config.gen_env_by_args(self.args)
+        self.env = pkg.config.gen_env_by_args(self.project_name, self.args)
+        pkg.config.Conf().init_template(self.project_name).set_env(
+            self.env).save(pkg.globa.args.config)
         self.cmd_list = []
         # 替换依赖项目
         biz.rsync_backup = lambda *i: self.cmd_list.append(i)
@@ -140,6 +142,7 @@ class TestBackup(unittest.TestCase):
 
         # 顺便做 --link-dest 和 保留备份 的测试
         bak_tag = randstr(4)
+        # 模拟备份副本的年份，用199开头避免冲突。加上0-9，用 '%Y' 识别成年份。
         bak_tag_time = bak_tag + '199'
         for t in range(10):
             tag = bak_tag_time + str(t)
