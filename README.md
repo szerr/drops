@@ -67,13 +67,11 @@ project:
 
 ## 设计理念
 
-`drops` 使用`docker-compose`管理服务，基于`rsync`实现增量备份和数据同步。
+使用`docker-compose`编排服务，基于`rsync`实现增量备份和数据同步。用 `git `做版本控制。
 
 `drops` 推荐使用基础容器，将项目文件映射到容器中，而不是`build`时打包到容器。这样可以不依赖自建`docker`源。如果有定制需求，容器在部署时现场 `build`。
 
-用 `git `做版本控制，推荐除了模板项目中 `.gitignore` 外，服务配置，发布文件全做版本控制。
-
-`drops `兼做项目发布，`drops build` 会迭代 `src `下所有目录，执行其中的 `drops/build.xx` 脚本，发布到`release` 文件夹。用 `git` 做发布文件的版本控制。
+使用  `build` 命令发布项目，结合 `sync`，`deploy` 等命令实现服务部署，`git tag` 的版本控制实现回滚。`backup` 和 `sync` 实现备份迁移和预发布环境的快速搭建。
 
 ## 项目结构
 
@@ -109,19 +107,19 @@ project:
 
 为了保持灵活的交互界面，`drops` 执行时可以指定 `env` 的任意属性，覆盖配置文件。
 
-| 短参数 | 长参数            | 功能                                                                             |
-| ------ | ----------------- | -------------------------------------------------------------------------------- |
-| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env`                  |
-| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                                            |
-| `-H`   | `--host`          | 主机名或 ip                                                                      |
-| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                                         |
-| `-u`   | `--username`      | 用户名，默认 root                                                                |
-| `-P`   | `--password`      | 密码，默认空                                                                     |
-| `-i `  | `--identity-file` | SSH identity-file，和密码二选一，都不填的话会自动搜索 ~/.ssh/ 或 ./secret/id\_\* |
-| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                                     |
-| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                                       |
-| `-c`   | `--config`        | 指定读取的配置文件                                                               |
-|        | --debug           | 解锁异常栈输出和 undeploy、clean                                                 |
+| 短参数 | 长参数            | 功能                                                         |
+| ------ | ----------------- | ------------------------------------------------------------ |
+| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env` |
+| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                        |
+| `-H`   | `--host`          | 主机名或 ip                                                  |
+| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                     |
+| `-u`   | `--username`      | 用户名，默认 `root`                                          |
+| `-P`   | `--password`      | 密码，默认空                                                 |
+| `-i `  | `--identity-file` | SSH `identity-file`，和密码二选一，都不填的话会自动搜索 `~/.ssh/` 或 `./secret/id_*` |
+| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                 |
+| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                   |
+| `-c`   | `--config`        | 指定读取的配置文件                                           |
+|        | `--debug`         | 输出异常栈，解锁 `undeploy`、`clean` 命令                    |
 
 ### 命令
 
@@ -175,7 +173,7 @@ project:
 
 非常欢迎你的加入！[提一个 Issue](https://github.com/szerr/drops/issues/new) 或者提交一个 Pull Request。
 
-标准 `Readme` 遵循 [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) 行为规范。
+标准 Readme 遵循 [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) 行为规范。
 
 ## 使用许可
 

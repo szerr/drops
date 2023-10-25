@@ -104,7 +104,7 @@ class HostExisted(DropsErr):
 
 class ConfigurationFileFormatError(DropsErr):
     def __str__(self):
-        return 'Configuration file format error.'
+        return 'Configuration file format error: %s' % self.args[0]
 
 
 class ConfigurationFileMissObj(DropsErr):
@@ -144,9 +144,9 @@ class NoDefaultEnvironmentIsSet(DropsErr):
         return 'No default environment is set.'
 
 
-class NoScriptForProject(DropsErr):
+class NoDropsDirProject(DropsErr):
     def __str__(self) -> str:
-        return 'No scripts are in the "%s".' % self.args[0]
+        return 'No drops dir in the "%s".' % self.args[0]
 
 
 class NoSupportedScriptFound(DropsErr):

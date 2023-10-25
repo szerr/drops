@@ -34,7 +34,6 @@ def main():
     # 解析参数
     args = parser.parse_args()
     pkg.globa.args = args
-    # pkg.init_config(args)
     # 调用相关命令，没有命令时打印 help
     if 'func' in args:
         if not args.debug:

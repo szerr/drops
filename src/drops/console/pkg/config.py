@@ -27,8 +27,9 @@ ENV_TYPE_LOCAL = 'local'
 
 
 class Environment():
-    def __init__(self, name, type, deploy_path, host='', port=22,
-                 username='root', encoding='utf-8', identity_file='', password='', project_name=''):
+    # env 环境配置，存储 env 配置数据和远程路径拼接。
+    def __init__(self, name, type, project_name, deploy_path=None, host='', port=22,
+                 username='root', encoding='utf-8', identity_file='', password=''):
         self.host = host
         self.port = port
         self.username = username
@@ -42,6 +43,13 @@ class Environment():
             self.type = type
         else:
             raise er.ArgsError('env can only be local or remote.')
+        # 补全部署路径
+        if not self.deploy_path:
+            if self.type == ENV_TYPE_LOCAL:
+                self.deploy_path = '.'
+            else:
+                self.deploy_path = self.join_path(
+                    '/srv/drops/', self.project_name)
 
     def join_path(self, *p):
         p_li = []
@@ -147,10 +155,10 @@ class Environment():
         return start + sep.join(p_li) + end
 
 
-def gen_env_by_args(args):
+def gen_env_by_args(project_name, args):
     return Environment(host=args.host, port=args.port, username=args.username, name=args.env, encoding=args.encoding,
                        deploy_path=args.deploy_path, identity_file=args.identity_file, password=args.password,
-                       type=args.env_type)
+                       type=args.env_type, project_name=project_name)
 
 
 class Conf():
@@ -160,12 +168,16 @@ class Conf():
             'env': {}
         }
         self.work_path = os.getcwd()
+        self.config_path = ''
 
-    def open(self, path=None):
-        if not path:
-            path = globa.args.config
-        self.work_path, _ = os.path.split(path)
-        with open(path) as fd:
+    def open(self, config_path=None):
+        if not config_path:
+            config_path = globa.args.config
+
+        self.work_path, _ = os.path.split(os.path.abspath(config_path))
+        self.config_path = config_path
+
+        with open(config_path) as fd:
             c = yaml.load(fd.read(), Loader=yaml.Loader)
         if 'project' not in c:
             raise er.ConfigurationFileMissObj('project')
@@ -274,7 +286,16 @@ class Conf():
     def get_env(self, name) -> Environment:
         # 获取单个 env
         if name in self._data.get('env', {}):
-            return Environment(name=name, **self._data['env'][name])
+            # 如果没有设置部署路径，使用默认路径
+            env_data = self._data['env'][name]
+            # 低版本迁移提醒
+            if not 'type' in env_data:
+                raise er.ConfigurationFileFormatError(
+                    self.config_path + " 中没有找到 type 字段，drops v1 配置中新增 type 字段，" +
+                    "请参照文档对配置文件手动升级：" +
+                    '''https://github.com/szerr/drops#%E9%85%8D%E7%BD%AE''')
+
+            return Environment(name=name, project_name=self.project_name(), **env_data)
         raise er.EnvDoesNotExist(name)
 
     def project_name(self):
@@ -293,15 +314,26 @@ class Conf():
         raise er.NoDefaultEnvironmentIsSet
 
 
+_CONF_OBJ = None
+
+
+def get_conf():
+    global _CONF_OBJ
+    if not _CONF_OBJ:
+        _CONF_OBJ = Conf().open(globa.args.config)
+    return _CONF_OBJ
+
+
 def get_env() -> Environment:
     # 处理全局参数，读取配置文件，按优先级替换 env 参数
-    conf = Conf().open(globa.args.config)
+    conf = get_conf()
     if globa.args.env:
         if conf.has_env(globa.args.env):
             env = conf.get_env(globa.args.env)
         else:
             # 先设置 deploy_path 为空，后边会自动设置或报错。
-            env = Environment(globa.args.env, ENV_TYPE_REMOVE, deploy_path='')
+            env = Environment(globa.args.env, ENV_TYPE_REMOVE,
+                              deploy_path='', project_name=conf.project_name())
     elif conf.has_default_env():
         env = conf.get_default_env()
     else:
@@ -324,8 +356,4 @@ def get_env() -> Environment:
         env.type = globa.args.type
     if globa.args.deploy_path:
         env.deploy_path = globa.args.deploy_path
-    # 如果没有设置部署路径，使用默认路径
-    if not env.deploy_path:
-        env.deploy_path = env.join_path('/srv/drops/', conf.project_name())
-    env.project_name = conf.project_name()
     return env
