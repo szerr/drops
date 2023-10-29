@@ -162,7 +162,7 @@ def rsync_volumes(env, force):
     return rsync2remotely(env, 'volumes', env.get_deploy_path())
 
 
-def mkdir_deploy(env):
+def mkdir_deploy_path(env):
     # 创建远程文件夹
     c = system.SSH(env)
     _, status = c.exec(' mkdir -p ' + env.get_deploy_path())

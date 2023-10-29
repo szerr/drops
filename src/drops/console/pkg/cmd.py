@@ -119,6 +119,7 @@ def add_deploy_cmd(s):
 
 def deploy_cmd(p):
     env = config.get_env()
+    biz.mkdir_deploy_path(env)
     s = biz.rsync_ops(env, p.force)
     if s:
         return s
@@ -414,6 +415,7 @@ var, volumes 建议只用来同步初始数据。
 
 def sync_cmd(p):
     env = config.get_env()
+    biz.mkdir_deploy_path(env)
     if p.obj == 'ops':
         return biz.rsync_ops(env, p.force)
     elif p.obj == 'docker':
