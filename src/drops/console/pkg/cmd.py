@@ -156,7 +156,7 @@ def exec_cmd(p):
     failed_times = 0
     env = config.get_env()
     while True:
-        status = biz.exec(env, env.docker_cmd_template(
+        status = biz.exec(env.docker_cmd_template(
             "exec -T "+p.container + ' ' + ' '.join(p.cmds)), env, p.restart)
         if p.restart:
             if status:
