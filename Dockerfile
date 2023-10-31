@@ -9,4 +9,4 @@ ENV PYTHONPATH=/usr/lib/drops/
 
 WORKDIR /srv/drops
 
-CMD drops
+CMD crond -f -d 8
