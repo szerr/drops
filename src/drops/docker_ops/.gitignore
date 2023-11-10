@@ -1,4 +1,4 @@
-./var
-./volumes
-./backup
-./src
+/var
+/volumes
+/backup
+/src
