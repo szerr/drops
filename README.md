@@ -42,6 +42,13 @@ drops -e dev ps # 查看容器运行状态
 `centOS `配置参考这里安装 docker <https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/> ，然后去 <https://github.com/docker/compose/releases/latest> 下载安装 docker-compose。
 podman-compose 和 docker-compose 并不兼容，会导致`drops`部署功能出现问题。
 
+## 在 docker 中使用
+
+```sh
+docker pull szerr/drops
+docker run -it --rm szerr/drops drops version
+```
+
 ## 配置
 
 `drops.yaml`
