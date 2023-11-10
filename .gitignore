@@ -4,5 +4,8 @@ egg-info
 *.egg-info
 debug.log
 .idea
+
+src/drops/docker_ops/pkg
+
 src/drops/console/te
 ./te
