@@ -134,7 +134,10 @@ def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path())
+    if 'docker-compose.yml' in os.listdir('.'):
+        return rsync2remotely(env, 'docker-compose.yml', env.docker_compose_path())
+    else:
+        return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path())
 
 
 def rsync_servers(env, force=False):
@@ -144,11 +147,23 @@ def rsync_servers(env, force=False):
 
 
 def rsync_ops(env, force=False):
+    # 同步 docker-compose.yaml release/ servers/
     print('------- sync ops -------')
     detection_cmd('rsync')
-    exclude = [i for i in os.listdir(config.get_conf().work_path) if
-               not i in ['docker-compose.yaml', 'docker-compose.yml', 'release', 'servers']]
-    return rsync2remotely(env, '.', env.deploy_path, exclude)
+    s = 0
+    if 'docker-compose.yml' in os.listdir('.'):
+        s = rsync2remotely(env, 'docker-compose.yml',
+                           env.docker_compose_path())
+    else:
+        s = rsync2remotely(env, 'docker-compose.yaml',
+                           env.docker_compose_path())
+    if s:
+        return s
+
+    s = rsync2remotely(env, 'release', env.get_deploy_path())
+    if s:
+        return s
+    return rsync2remotely(env, 'servers', env.get_deploy_path())
 
 
 def rsync_var(env, force):
