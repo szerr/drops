@@ -27,7 +27,7 @@ services:
       # - http_server
 
       # acme.sh:
-      #   servers: neilpang/acme.sh:latest
+      #   image: neilpang/acme.sh:latest
       #   command: daemon
       #   volumes:
       #     - ./volumes/acme.sh/acmeout:/acme.sh
