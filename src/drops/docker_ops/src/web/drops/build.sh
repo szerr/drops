@@ -30,4 +30,4 @@ do
     esac
     shift
 done
-cp ../index.html $dest
+cp -a ../index.html $dest
