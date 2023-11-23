@@ -1,6 +1,6 @@
 # drops
 
-`drops` 是一个便捷的远程服务部署工具，便于在没有完善 `CI/CD` 的情况下部署服务，版本控制，并提供增量备份和迁移。
+drops 是一套基于 docker compose 的轻量级运维管理方案，提供项目管理方案和单机运维流程。提供版本控制，发布更新，异地备份和迁移。支持集成到现有 CI/CD 系统中。可以应用在：中小型项目运维，离线环境部署。
 
 ## 快速开始
 
@@ -27,7 +27,7 @@ drops up
 drops ps
 ```
 
-访问 http://localhost 可以看到容器正常启动了。
+访问 http://localhost 可以看到服务正常运行。
 
 ### 部署远程服务
 
@@ -46,8 +46,27 @@ podman-compose 和 docker-compose 并不兼容，会导致`drops`部署功能出
 
 ```sh
 docker pull szerr/drops
-docker run -it --rm szerr/drops drops version
+# 创建示例项目
+docker run -it --rm -v `pwd`:/srv/drops szerr/drops drops new example
+cd example
 ```
+
+## 项目结构
+
+新建`drops`项目后，会生成一些预定的文件夹，结构如下：
+
+```sh
+├── docker-compose.yaml # 当前项目的 docker compsoe 文件
+├── drops.yaml # drops 配置文件
+├── release # 项目发布目录，存放项目的可执行文件，静态文件等。用 volumes 映射到容器中执行。
+├── secret  # 存放验证文件，key 等。
+├── servers # 容器中服务的配置文件，第三方提供的二进制文件。用 volumes 映射到容器中。
+├── src     # 项目源码路径，每个项目一个文件夹。如果项目适配有 Dockerfile，放在项目根目录中。
+├── var     # 容器暂存的文件，cache、log 等不重要的数据。推荐按 文件类型/容器名 映射到容器中。
+└── volumes # 容器落地的数据，可以用 drops backup 备份，drops sync volumes 从本地同步到远程。
+```
+
+**注意！不要将应用数据，容器生成的文件放到 `servers`、`releace`，`docker sync` 同步时远程路径会被删除或覆盖。**
 
 ## 配置
 
@@ -78,21 +97,7 @@ project:
 
 `drops` 推荐使用基础容器，将项目文件映射到容器中，而不是`build`时打包到容器。这样可以不依赖自建`docker`源。如果有定制需求，容器在部署时现场 `build`。
 
-使用  `build` 命令发布项目，结合 `sync`，`deploy` 等命令实现服务部署，`git tag` 的版本控制实现回滚。`backup` 和 `sync` 实现备份迁移和预发布环境的快速搭建。
-
-## 项目结构
-
-新建`drops`项目后，会生成一些预定的文件夹，其中：
-
-- `src` 是项目的源码路径，每个项目一个文件夹。如果项目适配了 `Dockerfile`，放在项目根目录中。
-- `servers` 下存放每个容器的依赖文件，配置等。每个容器一个文件夹。没有对应项目的 `Dockerfile` 放到这里。
-- `releace` 存放项目的可执行文件，静态文件等，并映射到容器中执行。使用 `drops build` 执行编译发布到这个文件夹。
-- `volumes` 容器落地的数据，可以用 `drops backup` 备份，`drops sync volumes` 同步实现迁移。
-- `backup` 如果没有，运行`drops backup` 会创建。存放备份文件。
-- `var` 容器暂存的文件，cache、log 等不重要的数据。推荐按 `文件类型`/`容器名` 存放
-- `secret` 存放验证文件
-
-**注意！不要将应用数据，容器生成的文件放到 servers、releace，`docker sync` 同步时远程路径会被删除或覆盖。**
+使用 `build` 命令发布项目，结合 `sync`，`deploy` 等命令实现服务部署，`git tag` 的版本控制实现回滚。`backup` 和 `sync` 实现备份迁移和预发布环境的快速搭建。
 
 ## 与项目集成
 
@@ -114,49 +119,49 @@ project:
 
 为了保持灵活的交互界面，`drops` 执行时可以指定 `env` 的任意属性，覆盖配置文件。
 
-| 短参数 | 长参数            | 功能                                                         |
-| ------ | ----------------- | ------------------------------------------------------------ |
-| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env` |
-| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                        |
-| `-H`   | `--host`          | 主机名或 ip                                                  |
-| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                     |
-| `-u`   | `--username`      | 用户名，默认 `root`                                          |
-| `-P`   | `--password`      | 密码，默认空                                                 |
+| 短参数 | 长参数            | 功能                                                                                 |
+| ------ | ----------------- | ------------------------------------------------------------------------------------ |
+| `-e`   | `--env`           | 操作的 `env` 名字，默认取 `drops.yaml` 的 `project.default_env`                      |
+| `-t`   | `--env-type`      | 操作的`env`类型，默认为 `drops.yaml `                                                |
+| `-H`   | `--host`          | 主机名或 ip                                                                          |
+| `-p`   | `--port`          | 远程 ssh 端口号，默认 22                                                             |
+| `-u`   | `--username`      | 用户名，默认 `root`                                                                  |
+| `-P`   | `--password`      | 密码，默认空                                                                         |
 | `-i `  | `--identity-file` | SSH `identity-file`，和密码二选一，都不填的话会自动搜索 `~/.ssh/` 或 `./secret/id_*` |
-| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                 |
-| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                   |
-| `-c`   | `--config`        | 指定读取的配置文件                                           |
-|        | `--debug`         | 输出异常栈，解锁 `undeploy`、`clean` 命令                    |
+| `-E`   | `--encoding`      | 远程服务器的编码，默认 utf-8                                                         |
+| `-d`   | `--deploy-path`   | 部署路径，默认 `/srv/drops/[project name]`                                           |
+| `-c`   | `--config`        | 指定读取的配置文件                                                                   |
+|        | `--debug`         | 输出异常栈，解锁 `undeploy`、`clean` 命令                                            |
 
 ### 命令
 
-| drops 命令                  | 功能                                                         |
-| --------------------------- | ------------------------------------------------------------ |
-| `new dirname <projectname>` | 创建一个`drops`项目。                                        |
-| `init`                      | 在当前目录初始化一个 `drops` 项目。                          |
-| `env`                       | 管理服务器连结配置。                                         |
-| `deploy`                    | 同步后启动容器。                                             |
-| `redeploy`                  | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。 |
-| `sync`                      | 同步项目到服务器。                                           |
+| drops 命令                  | 功能                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| `new dirname <projectname>` | 创建一个`drops`项目。                                                                    |
+| `init`                      | 在当前目录初始化一个 `drops` 项目。                                                      |
+| `env`                       | 管理服务器连结配置。                                                                     |
+| `deploy`                    | 同步后启动容器。                                                                         |
+| `redeploy`                  | 同步后启动容器，不同的是它会重新 build，并删除不需要的容器。                             |
+| `sync`                      | 同步项目到服务器。                                                                       |
 | `backup`                    | 备份远程目录到本地。使用时间做文件夹实现增量备份，如 `drops backup -d %Y-%m-%d_%H:%M:%S` |
-| `ps`                        | 查看当前运行的容器。                                         |
-| `start`                     | 启动容器。                                                   |
-| `up`                        | 创建和启动容器。                                             |
-| `restart`                   | 重启容器。                                                   |
-| `stop`                      | 停止容器。                                                   |
-| `kill`                      | 杀掉容器。                                                   |
-| `rm`                        | 删除容器。                                                   |
-| `logs`                      | 输出容器日志。-f 持续输出。                                  |
-| `exec container cmd`        | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。  |
-| `watch`                     | 监视文件系统事件，执行传入的 command。                       |
-| `nginxReload`               | 重载`nginx`配置，但不会更新证书。                            |
-| `nginxForceReload`          | 重载`nginx`配置，会更新证书。                                |
-| `deployHttpsKey`            | 申请并部署 `https` 证书。                                    |
-| `deployHttpsKey`            | 申请并部署 `https` 证书。                                    |
-| `initDebianEnv`             | 初始化远程服务器环境`Debian`系用。                           |
-| `drops project <name>`      | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`的路径。 |
-| `undeploy`                  | 清理掉服务器上的项目和容器。（危）                           |
-| `clean`                     | 删除当前项目下 `drops` 相关的文件。（危）                    |
+| `ps`                        | 查看当前运行的容器。                                                                     |
+| `start`                     | 启动容器。                                                                               |
+| `up`                        | 创建和启动容器。                                                                         |
+| `restart`                   | 重启容器。                                                                               |
+| `stop`                      | 停止容器。                                                                               |
+| `kill`                      | 杀掉容器。                                                                               |
+| `rm`                        | 删除容器。                                                                               |
+| `logs`                      | 输出容器日志。-f 持续输出。                                                              |
+| `exec container cmd`        | 执行容器中的命令，因为没有模拟`TTY`，只能执行非交互式命令。                              |
+| `watch`                     | 监视文件系统事件，执行传入的 command。                                                   |
+| `nginxReload`               | 重载`nginx`配置，但不会更新证书。                                                        |
+| `nginxForceReload`          | 重载`nginx`配置，会更新证书。                                                            |
+| `deployHttpsKey`            | 申请并部署 `https` 证书。                                                                |
+| `deployHttpsKey`            | 申请并部署 `https` 证书。                                                                |
+| `initDebianEnv`             | 初始化远程服务器环境`Debian`系用。                                                       |
+| `drops project <name>`      | 输出或更改项目名，也就是部署到`/srv/drops/<projectName>`的路径。                         |
+| `undeploy`                  | 清理掉服务器上的项目和容器。（危）                                                       |
+| `clean`                     | 删除当前项目下 `drops` 相关的文件。（危）                                                |
 
 `--help` 查看命令的更多帮助。
 `start`、`up`、`restart`、`stop`、`kill`、`rm` 默认对所有容器操作，可以用 -s 指定一个容器。
