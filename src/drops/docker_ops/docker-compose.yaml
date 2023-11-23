@@ -44,24 +44,24 @@ services:
       #   depends_on:
       #     - nginx
 
-  drops:
-    # 基于 drops 的远程备份和计划任务
-    image: szerr/drops:latest
-    volumes:
-      # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
-      - ./secret/ssh:/root/.ssh
-      # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
-      - ./servers/drops/cron/15min:/etc/periodic/15min:ro
-      - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
-      - ./servers/drops/cron/daily:/etc/periodic/daily:ro
-      - ./servers/drops/cron/weekly:/etc/periodic/weekly:ro
-      - ./servers/drops/cron/monthly:/etc/periodic/monthly:ro
-      # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      # 需要的可执行文件映射。
-      - ./servers/drops/bin:/usr/local/bin:ro
-      # 参考 cron_example 目录，有关定时增量备份的示例脚本。
-      # - /srv/backup:/srv/backup
-      # - ./servers/drops/drops:/srv/drops
-    restart: always
+  # drops:
+  #   # 基于 drops 的远程备份和计划任务
+  #   image: szerr/drops:latest
+  #   volumes:
+  #     # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
+  #     - ./secret/ssh:/root/.ssh
+  #     # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
+  #     - ./servers/drops/cron/15min:/etc/periodic/15min:ro
+  #     - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
+  #     - ./servers/drops/cron/daily:/etc/periodic/daily:ro
+  #     - ./servers/drops/cron/weekly:/etc/periodic/weekly:ro
+  #     - ./servers/drops/cron/monthly:/etc/periodic/monthly:ro
+  #     # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - /etc/timezone:/etc/timezone:ro
+  #     # 需要的可执行文件映射。
+  #     - ./servers/drops/bin:/usr/local/bin:ro
+  #     # 参考 cron_example 目录，有关定时增量备份的示例脚本。
+  #     # - /srv/backup:/srv/backup
+  #     # - ./servers/drops/drops:/srv/drops
+  #   restart: always
