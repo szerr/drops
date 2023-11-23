@@ -33,6 +33,11 @@ def main():
     pkg.init_argument(parser, subparsers)
     # 解析参数
     args = parser.parse_args()
+    if args.version:
+        # 输出版本号
+        from .pkg import version
+        print(version.__version__)
+        return 0
     pkg.globa.args = args
     # 调用相关命令，没有命令时打印 help
     if 'func' in args:

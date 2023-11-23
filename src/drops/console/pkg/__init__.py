@@ -51,6 +51,8 @@ def init_argument(p, s):
     p.add_argument('-c', '--config',
                    help="Specify an alternate config file. default: drops.yaml.", default='drops.yaml', nargs='?',
                    type=str)
+    p.add_argument('-v', '--version',
+                   help="print the drops version number", default=False, action='store_true')
     p.add_argument(
         '--log', help="log level: off, fatal, error, warn, info, debug, trace, all", default='info', nargs='?', type=str)
 
