@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   nginx:
-    image: nginx:stable-bullseye
+    image: nginx:stable
     restart: on-failure
     volumes:
       - ./volumes/nginx/ssl:/etc/nginx/ssl
@@ -14,6 +14,7 @@ services:
       - ./servers/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./servers/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./servers/nginx/lib:/etc/nginx/lib:ro
+      - ./servers/nginx/auth_basic:/etc/nginx/auth_basic:ro
       # 项目文件映射
       - ./release/web:/var/www/html:ro
     labels:
@@ -22,9 +23,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      # depends_on:
-      # nginx 依赖的服务写在这。这些服务启动后 nginx 开始启动。
-      # - http_server
+      #
 
       # acme.sh:
       #   image: neilpang/acme.sh:latest
@@ -44,24 +43,61 @@ services:
       #   depends_on:
       #     - nginx
 
-  # drops:
-  #   # 基于 drops 的远程备份和计划任务
-  #   image: szerr/drops:latest
-  #   volumes:
-  #     # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
-  #     - ./secret/ssh:/root/.ssh
-  #     # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
-  #     - ./servers/drops/cron/15min:/etc/periodic/15min:ro
-  #     - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
-  #     - ./servers/drops/cron/daily:/etc/periodic/daily:ro
-  #     - ./servers/drops/cron/weekly:/etc/periodic/weekly:ro
-  #     - ./servers/drops/cron/monthly:/etc/periodic/monthly:ro
-  #     # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
-  #     - /etc/localtime:/etc/localtime:ro
-  #     - /etc/timezone:/etc/timezone:ro
-  #     # 需要的可执行文件映射。
-  #     - ./servers/drops/bin:/usr/local/bin:ro
-  #     # 参考 cron_example 目录，有关定时增量备份的示例脚本。
-  #     # - /srv/backup:/srv/backup
-  #     # - ./servers/drops/drops:/srv/drops
-  #   restart: always
+      # drops:
+      #   # 基于 drops 的远程备份和计划任务
+      #   image: szerr/drops:latest
+      #   volumes:
+      #     # 如果需要定时任务登录其他服务器，比方说rsync异地备份的时候；配一个 key 和 known_hosts 在这里。
+      #     - ./secret/ssh:/root/.ssh
+      #     # 不同时间间隔执行的脚本。注意执行环境是 alpine，脚本和程序可能会因环境不同无法执行。go 程序编译时建议加 CGO_ENABLED=0。
+      #     - ./servers/drops/cron/15min:/etc/periodic/15min:ro
+      #     - ./servers/drops/cron/hourly:/etc/periodic/hourly:ro
+      #     - ./servers/drops/cron/daily:/etc/periodic/daily:ro
+      #     - ./servers/drops/cron/weekly:/etc/periodic/weekly:ro
+      #     - ./servers/drops/cron/monthly:/etc/periodic/monthly:ro
+      #     # 设置和主机相同的时区。注意映射文件只有重启容器后才会生效。
+      #     - /etc/localtime:/etc/localtime:ro
+      #     - /etc/timezone:/etc/timezone:ro
+      #     # 需要的可执行文件映射。
+      #     - ./servers/drops/bin:/usr/local/bin:ro
+      #     # 参考 cron_example 目录，有关定时增量备份的示例脚本。
+      #     # - /srv/backup:/srv/backup
+      #     # - ./servers/drops/drops:/srv/drops
+      #   restart: always
+
+      # # 基于 Prometheus 的监控
+      # # 用 nginx 的 basic auth 加一层身份验证，在项目目录中执行下列命令设置账密
+      # # htpasswd servers/nginx/auth_basic/metrics.pwd <username> 
+      # # 对以下规则适当修改，添加到 prometheus.yml。
+      # # - job_name: "<project_name>"
+      # # static_configs:
+      # #   - targets:
+      # #       - cadvisor.<domain_name>
+      # #       - node-exporter.<domain_name>
+      # # basic_auth:
+      # #   username: metrics
+      # #   password: <password>
+
+      # node-exporter:
+      #   # 基于 Prometheus 的主机监控
+      #   image: quay.io/prometheus/node-exporter:latest
+      #   pid: host
+      #   restart: always
+      #   volumes:
+      #     - /:/host:ro,rslave
+      #   command:
+      #     - '--path.rootfs=/host'
+
+      # cadvisor:
+      #   # 基于 Prometheus 的容器监控
+      #   image: gcr.io/cadvisor/cadvisor:latest
+      #   restart: always
+      #   privileged: true
+      #   devices:
+      #     - /dev/kmsg
+      #   volumes:
+      #     - /:/rootfs:ro
+      #     - /var/run:/var/run:ro
+      #     - /sys:/sys:ro
+      #     - /var/lib/docker/:/var/lib/docker:ro
+      #     - /dev/disk/:/dev/disk:ro
