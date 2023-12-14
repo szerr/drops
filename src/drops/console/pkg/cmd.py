@@ -100,7 +100,7 @@ def add_deploy_https_cert_cmd(s):
 
 def deploy_https_cert_cmd(p):
     env = config.get_env()
-    b = 'exec -T acme.sh redeploy-ssl'
+    b = 'exec -T acme.sh sh /usr/bin/redeploy-ssl'
     if p.force:
         b += ' --force'
     # redeploy-ssl 是作为文件映射进去的，需要重启才会更新。
