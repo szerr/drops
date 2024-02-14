@@ -454,6 +454,8 @@ def add_watch_cmd(s):
                    help="指定监视的路径，默认 ./src", default='./src', nargs='?')
     p.add_argument("-n", '--intervals',  type=int,
                    help="重启之间等待的秒数。默认1s。", default=1, nargs='?')
+    p.add_argument("-r", '--periodic-restart',  type=int,
+                   help="定期重启命令，默认 0s 既不重启。", default=0, nargs='?')
     p.add_argument("-f", '--skip-first',
                    help="不立即执行命令。", default=False, action='store_true')
     p.add_argument('command',  type=str,
@@ -464,7 +466,7 @@ def add_watch_cmd(s):
 
 def watch_cmd(p):
     # 监视文件夹，接受文件变动后返回0，或者执行命令。
-    return biz.watch_path(p.path, p.command, p.intervals, p.skip_first)
+    return biz.watch_path(p.path, p.command, p.intervals, p.skip_first, p.periodic_restart)
 
 
 def add_build_cmd(s):

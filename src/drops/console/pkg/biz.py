@@ -465,7 +465,7 @@ class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
             self.fn(event)
 
 
-def watch_path(path, command, intervals, skip_first):
+def watch_path(path, command, intervals, skip_first, periodic_restart):
     # 监视文件或文件夹路径，循环执行命令或退出。
     if not os.path.isdir(path) and not os.path.isfile(path):
         raise er.FileOrFolderDoesNotExist(path)
@@ -482,8 +482,17 @@ def watch_path(path, command, intervals, skip_first):
         observer.schedule(FileSystemEventHander(
             lambda x: sys.exit(0)), path, recursive=True)
     observer.start()
-    thread = threading.Thread(target=observer.join, daemon=True)
-    thread.start()
+    observer_join_worker = threading.Thread(target=observer.join, daemon=True)
+    observer_join_worker.start()
+    # 定期重启
+    if periodic_restart:
+        def periodicRestart():
+            while True:
+                time.sleep(periodic_restart)
+                log.info("定期重启")
+                p.restart()
+        thread = threading.Thread(target=periodicRestart, daemon=True)
+        thread.start()
     try:
         log.info("输入回车重启程序")
         while True:
