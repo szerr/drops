@@ -16,6 +16,7 @@
 # along with drops. If not, see <https://www.gnu.org/licenses/>.
 
 
+import getpass
 import os
 import time
 
@@ -445,6 +446,27 @@ def up_cmd(p):
     if p.container:
         b += ' ' + ' '.join(p.container)
     return biz.docker_compose_cmd(b, env)
+
+def add_login_cmd(s):
+    p = s.add_parser(
+        'login', help='登录镜像源')
+    p.add_argument("-u", '--username',  type=str,
+                   help="Username", required=True, nargs='?')
+    p.add_argument("-p", '--password',  type=str,
+                   help="Password", nargs='?')
+    p.add_argument('registry',  type=str,
+                   help="Image registry", nargs=1)
+    p.set_defaults(func=login_cmd)
+
+
+def login_cmd(p):
+    if p.password:
+        password = p.password
+    else:
+        password = getpass.getpass("请输入密码：")
+    b = 'docker login --username=%s --password=%s %s'%(p.username, password, p.registry[0])
+    env = config.get_env()
+    return biz.exec(b, env)
 
 
 def add_watch_cmd(s):

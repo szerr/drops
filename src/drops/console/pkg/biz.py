@@ -337,7 +337,6 @@ def docker_compose_cmd(cmd, env):
 def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
-    stdout = ""
     if env.type == config.ENV_TYPE_LOCAL:
         print('run host > localhost')
         print('command >', cmd)
