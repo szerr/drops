@@ -18,6 +18,7 @@
 
 import os
 import sys
+import threading
 import time
 import shutil
 import watchdog.events
@@ -464,14 +465,16 @@ class FileSystemEventHander(watchdog.events.FileSystemEventHandler):
             self.fn(event)
 
 
-def watch_path(path, command, intervals):
+def watch_path(path, command, intervals, skip_first):
     # 监视文件或文件夹路径，循环执行命令或退出。
     if not os.path.isdir(path) and not os.path.isfile(path):
         raise er.FileOrFolderDoesNotExist(path)
     observer = watchdog.observers.Observer()
     if command:
         p = helper.process(command, intervals)
-        p.start()
+        # 跳过第一次运行命令。
+        if not skip_first:
+            p.start()
         observer.schedule(FileSystemEventHander(p.add_event),
                           path, recursive=True)
     else:
@@ -479,11 +482,17 @@ def watch_path(path, command, intervals):
         observer.schedule(FileSystemEventHander(
             lambda x: sys.exit(0)), path, recursive=True)
     observer.start()
-
+    thread = threading.Thread(target=observer.join, daemon=True)
+    thread.start()
     try:
-        observer.join()
+        log.info("输入回车重启程序")
+        while True:
+            input()
+            log.info("restarting ...")
+            p.restart()
     except:
         print("exiting....")
         p.exit()
+        thread
         sys.exit(1)
     return 0

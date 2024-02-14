@@ -59,7 +59,7 @@ class process():
             print("kill>", self._command_str)
             self._process.kill()
             print("Wait for exit...")
-            self._process.wait()
+            print("exit code:", self._process.wait(1))
 
     def restart(self):
         self.stop()
@@ -69,10 +69,12 @@ class process():
         self._event_li.append(e)
 
     def periodicRestart(self):
+        lastTime = time.time()
         # 每次保存可能会触发多个更改事件，增加计时器减少重启的次数。
         while self._run_status and not globa.thread_exit:
             time.sleep(self._intervals)
             if self._event_li:
-                log.info("文件系统事件数量：", len(self._event_li))
+                log.info(str(int(time.time() - lastTime))+"s 内文件系统事件数量：", len(self._event_li))
                 self._event_li = []
                 self.restart()
+                lastTime = time.time()
