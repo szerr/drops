@@ -49,7 +49,7 @@ def init_project(name, path):
         t = os.path.join(path, i)
         if os.path.isdir(s):
             # 预置脚本在打包安装后会自动生成 pyc 文件，在这里过滤掉 pyc 文件。
-            shutil.copytree(s, i, ignore=lambda _, fli: [i for i in fli if not i.endswith('.pyc')])
+            shutil.copytree(s, i, ignore=lambda dirName, fileName: [i for i in fileName if i.endswith('.pyc') or i == '__pycache__'])
         else:
             shutil.copyfile(s, i)
     # 初始化配置
