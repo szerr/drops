@@ -232,6 +232,8 @@ def add_logs_cmd(s):
                    type=str, help="容器名")
     p.add_argument("-f", '--follow',
                    help="持续日志输出。", default=False, action='store_true')
+    p.add_argument("-n", '--tail',
+                   help='Number of lines to show from the end of the logs for each container. (default"all")', nargs='?')
     p.add_argument("-l", '--loop',
                    help="循坏输出，容器重启后重新运行。", default=False, action='store_true')
     p.set_defaults(func=logs_cmd)
@@ -241,6 +243,8 @@ def logs_cmd(p):
     b = 'logs '
     if p.follow:
         b += '-f '
+    if p.tail:
+        b += ' --tail %s '%p.tail
     env = config.get_env()
     if p.loop:
         while True:
