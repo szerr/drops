@@ -185,6 +185,8 @@ class Conf():
             raise er.ConfigurationFileMissObj('project.name')
         if 'env' not in c:
             c['env'] = {}
+        if 'subprojects' not in c:
+            c['subprojects'] = []
         self._data = c
         return self
 
@@ -231,6 +233,12 @@ class Conf():
                 'name': name,
                 'default_env': 'local',
         },
+            'subprojects': [
+                {
+                    'project': 'clone_to_name',
+                    'url': 'git@github.com:szerr/drops.git'
+                }
+            ],
         }
         return self
 
@@ -312,6 +320,12 @@ class Conf():
         if default_env:
             return self.get_env(default_env)
         raise er.NoDefaultEnvironmentIsSet
+
+    def get_subprojects(self):
+        return self._data['subprojects']
+    
+    def set_subprojects(self, subprojects):
+        self._data['subprojects'] = subprojects
 
 
 _CONF_OBJ = None

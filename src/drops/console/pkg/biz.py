@@ -61,6 +61,8 @@ def init_project(name, path):
         config.Conf().init_template(name).save(globa.args.config)
     return 0
 
+def git(project_name, arg):
+    config.gen_env_by_args("")
 
 def rsync2remotely(env, src, target, exclude=[]):
     # rsync 本地同步到远程路径
