@@ -42,13 +42,8 @@ def main():
     # 调用相关命令，没有命令时打印 help
     if 'func' in args:
         if not args.debug:
-            try:
-                status = args.func(args)
-                return status
-            except Exception as e:
-                pkg.globa.thread_exit = True
-                print('Fatal:', type(e).__name__, ':', e)
-                return 126
+            status = args.func(args)
+            return status
         else:
             pkg.biz.log.set_level(pkg.biz.log.DEBUG)
             return args.func(args)

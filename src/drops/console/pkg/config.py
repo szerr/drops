@@ -235,7 +235,7 @@ class Conf():
         },
             'subprojects': [
                 {
-                    'project': 'clone_to_name',
+                    'name': 'clone_to_name',
                     'url': 'git@github.com:szerr/drops.git'
                 }
             ],

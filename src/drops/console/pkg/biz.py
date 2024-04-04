@@ -23,7 +23,7 @@ import time
 import shutil
 import watchdog.events
 import watchdog.observers
-from fnmatch import fnmatch
+import fnmatch 
 
 import drops
 
@@ -61,8 +61,38 @@ def init_project(name, path):
         config.Conf().init_template(name).save(globa.args.config)
     return 0
 
-def git(project_name, arg):
-    config.gen_env_by_args("")
+def git(project_name, gbin):
+    subprojects = config.get_conf().get_subprojects()
+    if project_name:
+        filtered = fnmatch.filter([i['name'] for i in subprojects], project_name)
+        subprojects = [i for i in subprojects if i['name'] in filtered]
+    if not subprojects:
+        log.error("匹配到 subprojects 为空，无事可做")
+        return -1
+
+    work_path = os.getcwd()
+    src_dir_name = 'src'
+    if not os.path.isdir(src_dir_name):
+        os.mkdir(src_dir_name)
+    os.chdir(src_dir_name)
+    src_path = os.getcwd()
+
+    if gbin == "clone":
+        get_bin = "git clone "
+        for s in subprojects:
+            run_bin = get_bin + s['url'] + ' ' + s['name']
+            print(os.getcwd() + " > " + run_bin)
+            system.system(run_bin)
+    elif gbin == "pull":
+        run_bin = "git pull "
+        for s in subprojects:
+            os.chdir(s['name'])
+            print(os.getcwd() + " > " + run_bin)
+            system.system(run_bin)
+        os.chdir(src_path)
+    os.chdir(work_path)
+    return 0
+
 
 def rsync2remotely(env, src, target, exclude=[]):
     # rsync 本地同步到远程路径

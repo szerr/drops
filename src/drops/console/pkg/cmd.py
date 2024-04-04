@@ -67,8 +67,8 @@ def add_git_cmd(s):
     p = s.add_parser(
         'git', help='在 src 目录下对配置中 subprojects 进行 git 操作')
     p.set_defaults(func=git_cmd)
-    p.add_argument("project_name", help="项目名，支持正则")
-    p.add_argument("args", help="追加到 git 命令之后执行对匹配的所有项目执行", default=[], nargs='*')
+    p.add_argument("bin", help="clone, pull")
+    p.add_argument("project_name", help="项目名，支持通配符", nargs="?")
 
 
 def git_cmd(p):
@@ -77,16 +77,13 @@ def git_cmd(p):
     if not subprojects:
         print("subprojects 为空，无事可做。请执行 drops subproject add <项目名> <url> 添加项目")
         return
-    if not p.args:
-        print("args 不能为空，无事可做")
-        return -1
-    return biz.git(p.project_name, p.args)
+    return biz.git(p.project_name, p.bin)
 
 def add_subproject_cmd(s):
     p = s.add_parser(
         'subproject', help='管理 subproject')
     p.set_defaults(func=subproject_cmd)
-    p.add_argument("bin", help="ls, add, remove")
+    p.add_argument("bin", help="ls, add, remove, set")
     p.add_argument("name", help="项目名", default="", nargs="?")
     p.add_argument("url", help="远程地址", default="", nargs="?")
 
@@ -95,19 +92,28 @@ def subproject_cmd(p):
     conf = config.get_conf()
     subprojects = conf.get_subprojects()
     if p.bin == "add":
-        subprojects.append({"project": p.name, "url": p.url})
+        if p.name in [i["name"] for i in subprojects]:
+            print(p.name, "已存在")
+            return 1
+        subprojects.append({"name": p.name, "url": p.url})
+        conf.set_subprojects(subprojects)
+        conf.save()
+    elif p.bin == "set":
+        for s in subprojects:
+            if s['name'] == p.name:
+                s['url'] = p.url
         conf.set_subprojects(subprojects)
         conf.save()
     elif p.bin == "remove":
-        if p.name in [i["project"] for i in subprojects]:
-            subprojects = [i for i in subprojects if i["project"] != p.name]
+        if p.name in [i["name"] for i in subprojects]:
+            subprojects = [i for i in subprojects if i["name"] != p.name]
             conf.set_subprojects(subprojects)
             conf.save()
         else:
             print(p.name, "不存在")
     elif p.bin == "ls":
         for i in subprojects:
-            print(i["project"] + '\t' + i["url"])
+            print(i["name"] + '\t' + i["url"])
     else:
         print("不支持的命令：", p.bin)
         return 1
