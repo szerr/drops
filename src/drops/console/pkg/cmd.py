@@ -24,7 +24,7 @@ from . import config
 from . import biz
 from . import er
 from . import globa
-from . import system
+from . import log
 
 def add_new_cmd(s):
     p = s.add_parser(
@@ -84,16 +84,21 @@ def add_subproject_cmd(s):
         'subproject', help='管理 subproject')
     p.set_defaults(func=subproject_cmd)
     p.add_argument("bin", help="ls, add, remove, set")
-    p.add_argument("name", help="项目名", default="", nargs="?")
     p.add_argument("url", help="远程地址", default="", nargs="?")
+    p.add_argument("name", help="项目名", default="", nargs="?")
 
 
 def subproject_cmd(p):
     conf = config.get_conf()
     subprojects = conf.get_subprojects()
+    if not p.url and p.bin != "ls":
+        log.error("url 不能为空")
+        return -1
+    if not p.name:
+        p.name = os.path.splitext(os.path.basename(p.url))[0]
     if p.bin == "add":
         if p.name in [i["name"] for i in subprojects]:
-            print(p.name, "已存在")
+            log.error(p.name, "已存在")
             return 1
         subprojects.append({"name": p.name, "url": p.url})
         conf.set_subprojects(subprojects)
@@ -110,12 +115,12 @@ def subproject_cmd(p):
             conf.set_subprojects(subprojects)
             conf.save()
         else:
-            print(p.name, "不存在")
+            log.error(p.name, "不存在")
     elif p.bin == "ls":
         for i in subprojects:
             print(i["name"] + '\t' + i["url"])
     else:
-        print("不支持的命令：", p.bin)
+        log.error("不支持的命令：", p.bin)
         return 1
     return 0
 
