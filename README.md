@@ -181,6 +181,18 @@ project:
 
 `servers/crond/periodic_example/drops-backup.py` 是一个异地备份脚本。
 
+## 测试与打包
+
+首先安装打包需要的依赖
+
+```sh
+pip install build
+```
+
+进入 script 目录，`build.sh` 生成包，`install.sh` 会先调用 `build.sh` ，并安装包到本地。
+
+执行 `release.py <版本号>`  更改版本信息，并用 `gh` 创建发布，联合 `workflows` 实现发包。
+
 ## 致谢
 
 感谢 [JetBrains](https://jb.gg/OpenSourceSupport) 提供的 IDE
