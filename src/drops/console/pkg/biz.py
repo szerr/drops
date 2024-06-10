@@ -360,15 +360,15 @@ def docker_compose_cmd(cmd, env):
     # 接收一个字符串模板，
     # 拼接进入工作目录的命令，传入 cmd 并返回。
     # 可以执行任意 docker-compose 命令。
-    for i in ('&', '`', '"', "'", ';'):  # 防止执行其他什么东西
-        if i in cmd:
-            raise er.CmdCannotContain(i)
     return exec(env.docker_cmd_template(cmd), env)
 
 
 def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
+    for i in ('&', '`', '"', "'", ';', '|'):  # 防止执行其他什么东西
+        if i in cmd:
+            raise er.CmdCannotContain(i)
     if env.type == config.ENV_TYPE_LOCAL:
         print('run host > localhost')
         print('command >', cmd)
