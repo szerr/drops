@@ -484,9 +484,9 @@ def add_sync_cmd(s):
     biz.add_arg_force(p)
     p.set_defaults(func=sync_cmd)
     p.add_argument('obj', type=str, default='ops', choices=[
-        'docker',  'release', 'servers', 'var', 'volumes', 'ops'], nargs='?',
+        'docker',  'release', 'servers', 'var', 'volumes', 'ops', 'script'], nargs='?',
         help='''同步的对象。
-ops 相当于 docker, release, servers；
+ops 相当于 docker, release, servers, script；
 docker: docker-compose；
 var, volumes 建议只用来同步初始数据。
 同步 var, volumes 会检查远程目录是否为空文件夹，并做相应提示。''')

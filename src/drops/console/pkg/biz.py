@@ -194,7 +194,7 @@ def rsync_ops(env, force=False):
         dc_fname = 'docker-compose.yaml'
     elif 'compose.yml' in lsdir:
         dc_fname = 'compose.yml'
-    return rsync(dc_fname, 'release', 'servers')
+    return rsync(dc_fname, 'release', 'servers', 'script')
 
 def rsync_var(env, force):
     return rsync2remotely(env, 'var', env.get_deploy_path())
