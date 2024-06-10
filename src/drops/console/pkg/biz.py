@@ -366,7 +366,7 @@ def docker_compose_cmd(cmd, env):
 def exec(cmd, env, restart=False):
     # 对 env 执行任意命令, 如果没有设置 env，在当前目录执行。
     status = 0
-    for i in ('&', '`', '"', "'", ';', '|'):  # 防止执行其他什么东西
+    for i in ('&', '`', '"', "'", ';', '|', '\\'):  # 防止执行其他什么东西
         if i in cmd:
             raise er.CmdCannotContain(i)
     if env.type == config.ENV_TYPE_LOCAL:

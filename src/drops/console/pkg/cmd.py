@@ -368,6 +368,8 @@ def add_script_cmd(s):
 
 def script_cmd(p):
     env = config.get_env()
+    if '.' in p.script_name:
+        raise er.CmdCannotContain('.')
     return biz.exec("sh script/"+p.script_name, env)
 
 
