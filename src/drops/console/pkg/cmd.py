@@ -368,9 +368,10 @@ def add_script_cmd(s):
 
 def script_cmd(p):
     env = config.get_env()
-    if '.' in p.script_name:
-        raise er.CmdCannotContain('.')
-    return biz.exec("sh script/"+p.script_name, env)
+    for i in ['..', '/']:
+        if i in p.script_name:
+            raise er.ScriptCannotContain(i)
+    return biz.exec(env.cmd_template("sh script/"+p.script_name), env)
 
 
 def add_ps_cmd(s):
@@ -506,7 +507,9 @@ def sync_cmd(p):
     elif p.obj == 'var':
         return biz.rsync_var(env, p.force)
     elif p.obj == 'volumes':
-        return biz.rsync_volumes(env, p.force)
+        return biz.rsync_volumes(env, p.force)    
+    elif p.obj == 'script':
+        return biz.rsync_script(env, p.force)
     else:
         raise er.UnsupportedSyncObject(p.obj)
 

@@ -76,6 +76,12 @@ class Environment():
             return 'cd ' + self.get_deploy_path() + ' && docker-compose %s' % cmd
         # 如果没有指定 env，在本地执行不需要 cd
         return 'docker-compose %s' % cmd
+    
+    def cmd_template(self, cmd):
+        if self.type == ENV_TYPE_REMOVE:
+            return 'cd ' + self.get_deploy_path() + ' && ' + cmd
+        # 如果没有指定 env，在本地执行不需要 cd
+        return 'docker-compose %s' % cmd
 
     def container_path(self):
         return self.get_deploy_path()

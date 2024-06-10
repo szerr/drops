@@ -120,7 +120,9 @@ class EnvDoesNotExist(DropsErr):
 class CmdCannotContain(DropsErr):
     def __str__(self):
         return 'Command cannot contain "%s".' % self.args[0]
-
+class ScriptCannotContain(DropsErr):
+    def __str__(self):
+        return 'Script name cannot contain "%s".' % self.args[0]
 
 class CmdExecutionError(DropsErr):
     def __str__(self):
