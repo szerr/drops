@@ -185,20 +185,16 @@ def rsync_ops(env, force=False):
     print('------- sync ops -------')
     detection_cmd('rsync')
     s = 0
-    if 'docker-compose.yml' in os.listdir('.'):
-        s = rsync2remotely(env, 'docker-compose.yml',
-                           env.docker_compose_path())
-    else:
-        s = rsync2remotely(env, 'docker-compose.yaml',
-                           env.docker_compose_path())
-    if s:
-        return s
-
-    s = rsync2remotely(env, 'release', env.get_deploy_path())
-    if s:
-        return s
-    return rsync2remotely(env, 'servers', env.get_deploy_path())
-
+    # 兼容不同的 docker-compose 文件
+    dc_fname = 'compose.yaml'
+    lsdir = os.listdir('.')
+    if 'docker-compose.yml' in lsdir:
+        dc_fname = 'docker-compose.yml'
+    elif 'docker-compose.yaml' in lsdir:
+        dc_fname = 'docker-compose.yaml'
+    elif 'compose.yml' in lsdir:
+        dc_fname = 'compose.yml'
+    return rsync(dc_fname, 'release', 'servers')
 
 def rsync_var(env, force):
     return rsync2remotely(env, 'var', env.get_deploy_path())
@@ -210,6 +206,12 @@ def rsync_volumes(env, force):
     #         raise er.UserCancel
     return rsync2remotely(env, 'volumes', env.get_deploy_path())
 
+def rsync(env, *fli):
+    for i in fli:
+        s = rsync2remotely(env, 'var', env.get_deploy_path())
+        if s:
+            return s
+    return 0
 
 def mkdir_deploy_path(env):
     # 创建远程文件夹
