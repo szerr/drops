@@ -359,6 +359,17 @@ def project_cmd(p):
             print(k, ': ', i, sep='')
     return 0
 
+def add_script_cmd(s):
+    p = s.add_parser(
+        'script', help='在指定环境运行脚本，用于初始化环境。请注意安全，小心注入攻击和脚本安全，不要复制粘贴命令。')
+    p.set_defaults(func=script_cmd)
+    p.add_argument('script_name',
+        help="script_name", type=str, nargs='?')
+
+def script_cmd(p):
+    env = config.get_env()
+    return biz.exec("sh script/"+p.script_name, env)
+
 
 def add_ps_cmd(s):
     p = s.add_parser(
