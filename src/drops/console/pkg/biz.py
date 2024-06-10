@@ -200,7 +200,7 @@ def rsync_ops(env, force=False):
         dc_fname = 'docker-compose.yaml'
     elif 'compose.yml' in lsdir:
         dc_fname = 'compose.yml'
-    return rsync(dc_fname, 'release', 'servers', 'script')
+    return rsync(env, dc_fname, 'release', 'servers', 'script')
 
 def rsync_var(env, force):
     return rsync2remotely(env, 'var', env.get_deploy_path())
@@ -212,11 +212,20 @@ def rsync_volumes(env, force):
     #         raise er.UserCancel
     return rsync2remotely(env, 'volumes', env.get_deploy_path())
 
+# rsync 同步多个文件、文件夹，如果不存在则 warning 并跳过。
 def rsync(env, *fli):
+    lsdir = os.listdir('.')
+    no_exist = []
     for i in fli:
-        s = rsync2remotely(env, 'var', env.get_deploy_path())
+        if not i in lsdir:
+            no_exist.append(i)
+            continue
+        s = rsync2remotely(env, i, env.get_deploy_path())
         if s:
             return s
+    if no_exist:
+        print()
+        log.warn(','.join(no_exist) + " does not exist.")
     return 0
 
 def mkdir_deploy_path(env):
