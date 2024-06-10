@@ -168,10 +168,16 @@ def rsync_docker(env, force=False):
     # 同步项目到远程目录
     print('------- sync docker-compose.yaml -------')
     detection_cmd('rsync')
-    if 'docker-compose.yml' in os.listdir('.'):
-        return rsync2remotely(env, 'docker-compose.yml', env.docker_compose_path())
-    else:
-        return rsync2remotely(env, 'docker-compose.yaml', env.docker_compose_path())
+    # 兼容不同的 docker-compose 文件
+    dc_fname = 'compose.yaml'
+    lsdir = os.listdir('.')
+    if 'docker-compose.yml' in lsdir:
+        dc_fname = 'docker-compose.yml'
+    elif 'docker-compose.yaml' in lsdir:
+        dc_fname = 'docker-compose.yaml'
+    elif 'compose.yml' in lsdir:
+        dc_fname = 'compose.yml'
+    return rsync2remotely(env, dc_fname, env.docker_compose_path())
 
 
 def rsync_servers(env, force=False):
