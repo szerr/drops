@@ -80,7 +80,11 @@ def git(project_name, gbin):
     if gbin == "clone":
         get_bin = "git clone "
         for s in subprojects:
-            run_bin = get_bin + s['url'] + ' ' + s['name']
+            branch = s.get('branch', '')
+            if branch:
+                run_bin = get_bin + '--branch ' + branch + ' ' + s['url'] + ' ' + s['name']
+            else:
+                run_bin = get_bin + s['url'] + ' ' + s['name']
             print(os.getcwd() + " > " + run_bin)
             system.system(run_bin)
     elif gbin == "pull":
