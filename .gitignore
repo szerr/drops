@@ -9,3 +9,4 @@ src/drops/docker_ops/pkg
 
 src/drops/console/te
 ./te
+.venv
